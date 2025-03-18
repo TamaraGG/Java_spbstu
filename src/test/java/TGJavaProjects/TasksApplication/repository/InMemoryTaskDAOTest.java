@@ -26,7 +26,6 @@ class InMemoryTaskDAOTest {
     private static final Task task1 = mock(Task.class);
     private static final Task task2 = mock(Task.class);
 
-    @Autowired
     private InMemoryTaskDAO repository;
 
     @BeforeEach
