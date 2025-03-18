@@ -31,7 +31,7 @@ class InMemoryTaskDAOTest {
 
     @BeforeEach
     void setUp() {
-
+        repository = new InMemoryTaskDAO();
     }
 
     @Test
