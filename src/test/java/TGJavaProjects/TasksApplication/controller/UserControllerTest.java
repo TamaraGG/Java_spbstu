@@ -70,13 +70,11 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userJson))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.userId",
-                        CoreMatchers.is((int) user.getUserId())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.firstName",
-                        CoreMatchers.is(user.getFirstName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.lastName",
-                        CoreMatchers.is(user.getLastName())))
-                .andExpect(jsonPath("$.email", CoreMatchers.is(user.getEmail())));
+                .andExpect(jsonPath("$.userId").value((int) user.getUserId()))
+                .andExpect(jsonPath("$.firstName").value(user.getFirstName()))
+                .andExpect(jsonPath("$.lastName").value(user.getLastName()))
+                .andExpect(jsonPath("$.email").value(user.getEmail()));
+
         verify(service, times(1)).findUserById(user.getUserId());
     }
 
@@ -100,14 +98,10 @@ class UserControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(userJson))
                 .andExpect(status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.userId",
-                        CoreMatchers.is((int) user.getUserId())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.firstName",
-                        CoreMatchers.is(user.getFirstName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.lastName",
-                        CoreMatchers.is(user.getLastName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email",
-                        CoreMatchers.is(user.getEmail())));
+                .andExpect(jsonPath("$.userId").value((int) user.getUserId()))
+                .andExpect(jsonPath("$.firstName").value(user.getFirstName()))
+                .andExpect(jsonPath("$.lastName").value(user.getLastName()))
+                .andExpect(jsonPath("$.email").value(user.getEmail()));
 
         verify(service, times(1)).addUser(any(User.class));
     }
