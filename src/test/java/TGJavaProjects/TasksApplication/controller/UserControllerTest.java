@@ -1,7 +1,7 @@
 package TGJavaProjects.TasksApplication.controller;
 
 
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -26,7 +26,9 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @WebMvcTest(controllers = UserController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -55,7 +57,7 @@ class UserControllerTest {
         mockMvc.perform(get("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.size()").value(1));
+                .andExpect(jsonPath("$.size()").value(1));
         verify(service, times(1)).findAllUsers();
     }
 
@@ -74,13 +76,12 @@ class UserControllerTest {
                         CoreMatchers.is(user.getFirstName())))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.lastName",
                         CoreMatchers.is(user.getLastName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email",
-                        CoreMatchers.is(user.getEmail())));
+                .andExpect(jsonPath("$.email", CoreMatchers.is(user.getEmail())));
         verify(service, times(1)).findUserById(user.getUserId());
     }
 
     @Test
-    void getUserById_ReturnsNotFound_WhenDoesntExists() throws Exception {
+    void getUserById_ReturnsNotFound_WhenDoesNotExist() throws Exception {
         when(service.findUserById(user.getUserId())).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/users/" + user.getUserId())
