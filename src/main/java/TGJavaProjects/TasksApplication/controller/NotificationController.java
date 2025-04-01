@@ -33,18 +33,14 @@ public class NotificationController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable long userId) {
-        Optional<List<Notification>> result = NOTIFICATION_SERVICE.getUserNotifications(userId);
-
-        return result
+        return NOTIFICATION_SERVICE.getUserNotifications(userId)
                 .map(notifications -> new ResponseEntity<>(notifications, HttpStatus.OK))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("task/{taskId}")
     public ResponseEntity<List<Notification>> getTaskNotifications(@PathVariable long taskId) {
-        Optional<List<Notification>> result = NOTIFICATION_SERVICE.getTaskNotifications(taskId);
-
-        return result
+        return NOTIFICATION_SERVICE.getTaskNotifications(taskId)
                 .map(notifications -> new ResponseEntity<>(notifications, HttpStatus.OK))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
