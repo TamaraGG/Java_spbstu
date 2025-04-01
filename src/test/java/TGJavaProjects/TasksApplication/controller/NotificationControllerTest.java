@@ -62,7 +62,20 @@ class NotificationControllerTest {
     }
 
     @Test
-    void getUserNotifications_ReturnsListOfNotifications_WhenUserExists() throws Exception {
+    void getAllNotifications_ReturnsListOfNotifications_WhenNotificationsDoNotExist() throws Exception {
+
+        when(service.getAllNotifications()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/notifications")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(0));
+
+        verify(service, times(1)).getAllNotifications();
+    }
+
+    @Test
+    void getUserNotifications_ReturnsListOfNotifications_WhenUserExistsAndHasNotifications() throws Exception {
         when(service.getUserNotifications(notification.getUserId()))
                 .thenReturn(Optional.of(Collections.singletonList(notification)));
 
@@ -70,6 +83,19 @@ class NotificationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(1));
+
+        verify(service, times(1)).getUserNotifications(notification.getUserId());
+    }
+
+    @Test
+    void getUserNotifications_ReturnsListOfNotifications_WhenUserExistsAndDoesNotHaveNotifications() throws Exception {
+        when(service.getUserNotifications(notification.getUserId()))
+                .thenReturn(Optional.of(List.of()));
+
+        mockMvc.perform(get("/api/v1/notifications/user/" + notification.getUserId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(0));
 
         verify(service, times(1)).getUserNotifications(notification.getUserId());
     }
@@ -87,7 +113,20 @@ class NotificationControllerTest {
     }
 
     @Test
-    void getTaskNotifications_ReturnsListOfNotifications_WhenTaskExists() throws Exception {
+    void getTaskNotifications_ReturnsListOfNotifications_WhenTaskExistsAndDoesNotHaveNotifications() throws Exception {
+        when(service.getTaskNotifications(notification.getTaskId()))
+                .thenReturn(Optional.of(List.of()));
+
+        mockMvc.perform(get("/api/v1/notifications/task/" + notification.getTaskId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(0));
+
+        verify(service, times(1)).getTaskNotifications(notification.getTaskId());
+    }
+
+    @Test
+    void getTaskNotifications_ReturnsListOfNotifications_WhenTaskExistsAndHasNotifications() throws Exception {
         when(service.getTaskNotifications(notification.getTaskId()))
                 .thenReturn(Optional.of(Collections.singletonList(notification)));
 
