@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,7 +64,7 @@ class NotificationControllerTest {
     @Test
     void getUserNotifications_ReturnsListOfNotifications_WhenUserExists() throws Exception {
         when(service.getUserNotifications(notification.getUserId()))
-                .thenReturn(Collections.singletonList(notification));
+                .thenReturn(Optional.of(Collections.singletonList(notification)));
 
         mockMvc.perform(get("/api/v1/notifications/user/" + notification.getUserId())
                         .contentType(MediaType.APPLICATION_JSON))
@@ -75,20 +76,20 @@ class NotificationControllerTest {
 
     @Test
     void getUserNotifications_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
-//        when(service.getUserNotifications(notification.getUserId()))
-//                .thenReturn(List.of());
-//
-//        mockMvc.perform(get("/api/v1/notifications/user/" + notification.getUserId())
-//                        .contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(status().isNotFound());
-//
-//        verify(service, times(1)).getUserNotifications(notification.getUserId());
+        when(service.getUserNotifications(notification.getUserId()))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/notifications/user/" + notification.getUserId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+
+        verify(service, times(1)).getUserNotifications(notification.getUserId());
     }
 
     @Test
     void getTaskNotifications_ReturnsListOfNotifications_WhenTaskExists() throws Exception {
         when(service.getTaskNotifications(notification.getTaskId()))
-                .thenReturn(Collections.singletonList(notification));
+                .thenReturn(Optional.of(Collections.singletonList(notification)));
 
         mockMvc.perform(get("/api/v1/notifications/task/" + notification.getTaskId())
                         .contentType(MediaType.APPLICATION_JSON))
@@ -100,13 +101,13 @@ class NotificationControllerTest {
 
     @Test
     void getTaskNotifications_ReturnsNotFound_WhenTaskDoesNotExist() throws Exception {
-//        when(service.getTaskNotifications(notification.getTaskId()))
-//                .thenReturn(List.of());
-//
-//        mockMvc.perform(get("/api/v1/notifications/task/" + notification.getTaskId())
-//                        .contentType(MediaType.APPLICATION_JSON))
-//                .andExpect(status().isNotFound());
-//
-//        verify(service, times(1)).getTaskNotifications(notification.getTaskId());
+        when(service.getTaskNotifications(notification.getTaskId()))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/v1/notifications/task/" + notification.getTaskId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+
+        verify(service, times(1)).getTaskNotifications(notification.getTaskId());
     }
 }
