@@ -5,7 +5,6 @@ import TGJavaProjects.TasksApplication.model.User;
 import TGJavaProjects.TasksApplication.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,23 +17,23 @@ import java.util.List;
 public class UserController {
 
 //    @Autowired
-    private final UserService USER_SERVICE;
+    private final UserService userService;
 
     @GetMapping
     public List<User> findAllUsers() {
-        return USER_SERVICE.findAllUsers();
+        return userService.findAllUsers();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable("id") long userId) {
-        return USER_SERVICE.findUserById(userId)
+        return userService.findUserById(userId)
                 .map(u-> new ResponseEntity<>(u, HttpStatus.OK))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<User> addUser(@RequestBody User user) {
-        return USER_SERVICE.addUser(user)
+        return userService.addUser(user)
                 .map(u -> ResponseEntity.created(URI.create("/api/v1/users/" + u.getUserId())).body(u))
                 .orElse(ResponseEntity.badRequest().build());
     }
