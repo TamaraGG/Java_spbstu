@@ -5,7 +5,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
@@ -36,10 +35,10 @@ class InMemoryNotificationDAOTest {
         repository.addNotification(notification1);
         repository.addNotification(notification2);
 
-        List<Notification> recievedNotifications = repository.getAllNotifications();
+        List<Notification> receivedNotifications = repository.getAllNotifications();
 
-        assertNotNull(recievedNotifications);
-        assertEquals(2, recievedNotifications.size());
+        assertNotNull(receivedNotifications);
+        assertEquals(2, receivedNotifications.size());
     }
 
     @Test
@@ -49,10 +48,10 @@ class InMemoryNotificationDAOTest {
         repository.addNotification(notification1);
         repository.addNotification(notification2);
 
-        List<Notification> recievedNotifications = repository.getUserNotifications(USER_ID);
+        List<Notification> receivedNotifications = repository.getUserNotifications(USER_ID);
 
-        assertNotNull(recievedNotifications);
-        assertEquals(2, recievedNotifications.size());
+        assertNotNull(receivedNotifications);
+        assertEquals(2, receivedNotifications.size());
     }
 
     @Test
@@ -62,10 +61,10 @@ class InMemoryNotificationDAOTest {
         repository.addNotification(notification1);
         repository.addNotification(notification2);
 
-        List<Notification> recievedNotifications = repository.getTaskNotifications(TASK_ID);
+        List<Notification> receivedNotifications = repository.getTaskNotifications(TASK_ID);
 
-        assertNotNull(recievedNotifications);
-        assertEquals(2, recievedNotifications.size());
+        assertNotNull(receivedNotifications);
+        assertEquals(2, receivedNotifications.size());
     }
 
     @Test
