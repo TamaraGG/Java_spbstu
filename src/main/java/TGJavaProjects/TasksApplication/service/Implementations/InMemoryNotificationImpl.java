@@ -7,25 +7,35 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
 public class InMemoryNotificationImpl implements NotificationService {
 
-    private final InMemoryNotificationDAO REPOSITORY;
+    private final InMemoryUserServiceImpl userService;
+    private final InMemoryTaskServiceImpl taskService;
+
+    private final InMemoryNotificationDAO notificationDAO;
 
     @Override
     public List<Notification> getAllNotifications() {
-        return REPOSITORY.getAllNotifications();
+        return notificationDAO.getAllNotifications();
     }
 
     @Override
-    public List<Notification> getUserNotifications(long userId) {
-        return REPOSITORY.getUserNotifications(userId);
+    public Optional<List<Notification>> getUserNotifications(long userId) {
+        if (userService.findUserById(userId).isPresent()) {
+            return Optional.of(notificationDAO.getUserNotifications(userId));
+        }
+        return Optional.empty();
     }
 
     @Override
-    public List<Notification> getTaskNotifications(long taskId) {
-        return REPOSITORY.getTaskNotifications(taskId);
+    public Optional<List<Notification>> getTaskNotifications(long taskId) {
+        if (taskService.getTaskById(taskId).isPresent()) {
+            return Optional.of(notificationDAO.getTaskNotifications(taskId));
+        }
+        return Optional.empty();
     }
 }

@@ -35,7 +35,7 @@ public class UserController {
     @PostMapping
     public ResponseEntity<User> addUser(@RequestBody User user) {
         return USER_SERVICE.addUser(user)
-                .map(u -> ResponseEntity.created(URI.create("/users/" + u.getUserId())).body(u))
+                .map(u -> ResponseEntity.created(URI.create("/api/v1/users/" + u.getUserId())).body(u))
                 .orElse(ResponseEntity.badRequest().build());
     }
 
