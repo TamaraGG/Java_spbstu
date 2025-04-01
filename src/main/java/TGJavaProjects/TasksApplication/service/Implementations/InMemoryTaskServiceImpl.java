@@ -15,33 +15,33 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     private final InMemoryUserServiceImpl userService;
 
-    private final InMemoryTaskDAO REPOSITORY;
+    private final InMemoryTaskDAO taskDAO;
 
     @Override
     public List<Task> getAllTasks() {
-        return REPOSITORY.getAllTasks();
+        return taskDAO.getAllTasks();
     }
 
     @Override
     public Optional<Task> getTaskById(long taskId) {
-        return Optional.ofNullable(REPOSITORY.getTaskById(taskId));
+        return Optional.ofNullable(taskDAO.getTaskById(taskId));
     }
 
     @Override
     public Optional<List<Task>> getTasksByUserId(long userId) {
         if (userService.findUserById(userId).isPresent()) {
-            return Optional.of(REPOSITORY.getTasksByUserId(userId));
+            return Optional.of(taskDAO.getTasksByUserId(userId));
         }
         return Optional.empty();
     }
 
     @Override
     public Optional<Task> addTask(Task task) {
-        return Optional.ofNullable(REPOSITORY.addTask(task));
+        return Optional.ofNullable(taskDAO.addTask(task));
     }
 
     @Override
     public Optional<Task> deleteTask(long taskId) {
-        return Optional.ofNullable(REPOSITORY.deleteTask(taskId));
+        return Optional.ofNullable(taskDAO.deleteTask(taskId));
     }
 }

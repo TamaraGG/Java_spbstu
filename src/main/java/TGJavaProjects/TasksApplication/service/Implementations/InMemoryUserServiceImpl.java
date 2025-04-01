@@ -13,31 +13,31 @@ import java.util.Optional;
 @AllArgsConstructor //для внедрения через конструктор
 public class InMemoryUserServiceImpl implements UserService {
 
-    private final InMemoryUserDAO REPOSITORY;
+    private final InMemoryUserDAO userDAO;
 
     @Override
     public List<User> findAllUsers() {
-        return REPOSITORY.findAllUsers();
+        return userDAO.findAllUsers();
     }
 
     @Override
     public Optional<User> addUser(User user) {
-        return Optional.ofNullable(REPOSITORY.addUser(user));
+        return Optional.ofNullable(userDAO.addUser(user));
     }
 
     @Override
     public Optional<User> findUserById(long userId) {
-        return Optional.ofNullable(REPOSITORY.findUserById(userId));
+        return Optional.ofNullable(userDAO.findUserById(userId));
     }
 
     @Override
     public Optional<User> updateUser(User user) {
-        return Optional.ofNullable(REPOSITORY.updateUser(user));
+        return Optional.ofNullable(userDAO.updateUser(user));
     }
 
     @Override
     public Optional<User> deleteUser(long userId) {
-        return Optional.ofNullable(REPOSITORY.deleteUser(userId));
+        return Optional.ofNullable(userDAO.deleteUser(userId));
     }
 
 }
