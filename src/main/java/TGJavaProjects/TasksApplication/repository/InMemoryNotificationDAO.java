@@ -9,20 +9,20 @@ import java.util.List;
 @Repository
 public class InMemoryNotificationDAO {
 
-    private final List<Notification> NOTIFICATIONS = new ArrayList<>();
+    private final List<Notification> notifications = new ArrayList<>();
 
     public List<Notification> getAllNotifications() {
-        return NOTIFICATIONS;
+        return notifications;
     }
 
     public List<Notification> getUserNotifications(long userId) {
-        return NOTIFICATIONS.stream()
+        return notifications.stream()
                 .filter(notification -> notification.getUserId() == userId)
                 .toList();
     }
 
     public List<Notification> getTaskNotifications(long taskId) {
-        return NOTIFICATIONS.stream()
+        return notifications.stream()
                 .filter(notification -> notification.getTaskId() == taskId)
                 .toList();
     }

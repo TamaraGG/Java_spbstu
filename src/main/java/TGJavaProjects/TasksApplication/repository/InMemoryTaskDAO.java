@@ -8,34 +8,34 @@ import java.util.List;
 
 @Repository
 public class InMemoryTaskDAO {
-    private final List<Task> TASKS = new ArrayList<>();
+    private final List<Task> tasks = new ArrayList<>();
 
     public List<Task> getAllTasks() {
-        return TASKS;
+        return tasks;
     }
 
     public Task getTaskById(long taskId) {
-        return TASKS.stream()
+        return tasks.stream()
                 .filter(task -> task.getTaskId() == taskId)
                 .findFirst()
                 .orElse(null);
     }
 
     public List<Task> getTasksByUserId(long userId) {
-        return TASKS.stream()
+        return tasks.stream()
                 .filter(task -> task.getUserId() == userId)
                 .toList();
     }
 
     public Task addTask(Task task) {
-        TASKS.add(task);
+        tasks.add(task);
         return task;
     }
 
     public Task deleteTask(long taskId) {
         var task = getTaskById(taskId);
         if (task != null) {
-            TASKS.remove(task);
+            tasks.remove(task);
         }
         return task;
     }
