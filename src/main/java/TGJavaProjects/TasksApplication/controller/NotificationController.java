@@ -17,15 +17,8 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<List<Notification>> getAllNotifications() {
-        List<Notification> result = notificationService.getAllNotifications();
-
-        if (result.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        else {
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        }
+    public List<Notification> getAllNotifications() {
+        return notificationService.getAllNotifications();
     }
 
     @GetMapping("/user/{userId}")
