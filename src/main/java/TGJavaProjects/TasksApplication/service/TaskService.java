@@ -11,7 +11,7 @@ public interface TaskService {
 
     public List<Task> getAllTasks();
     public Optional<Task> getTaskById(long taskId);
-    public List<Task> getTasksByUserId(long userId);
+    public Optional<List<Task>> getTasksByUserId(long userId);
     public Optional<Task> addTask (Task task);
     public Optional<Task> deleteTask(long taskId);
 }

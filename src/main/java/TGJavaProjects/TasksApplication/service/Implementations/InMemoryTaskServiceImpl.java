@@ -13,6 +13,8 @@ import java.util.Optional;
 @AllArgsConstructor
 public class InMemoryTaskServiceImpl implements TaskService {
 
+    private final InMemoryUserServiceImpl userService;
+
     private final InMemoryTaskDAO REPOSITORY;
 
     @Override
@@ -26,8 +28,11 @@ public class InMemoryTaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<Task> getTasksByUserId(long userId) {
-        return REPOSITORY.getTasksByUserId(userId);
+    public Optional<List<Task>> getTasksByUserId(long userId) {
+        if (userService.findUserById(userId).isPresent()) {
+            return Optional.of(REPOSITORY.getTasksByUserId(userId));
+        }
+        return Optional.empty();
     }
 
     @Override
