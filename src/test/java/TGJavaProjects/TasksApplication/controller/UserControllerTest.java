@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +53,7 @@ class UserControllerTest {
     }
     @Test
     void getAllUsers_ReturnsListOfUsers() throws Exception {
-        when(service.findAllUsers()).thenReturn(Arrays.asList(user));
+        when(service.findAllUsers()).thenReturn(Collections.singletonList(user));
 
         mockMvc.perform(get("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON))
