@@ -37,7 +37,12 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     public Optional<Task> addTask(Task task) {
-        return Optional.ofNullable(taskDAO.addTask(task));
+        if (userService.findUserById(task.getUserId()).isPresent()) {
+            return Optional.ofNullable(taskDAO.addTask(task));
+        }
+        else {
+            return Optional.empty();
+        }
     }
 
     @Override
