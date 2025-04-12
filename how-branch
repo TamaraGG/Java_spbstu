@@ -1,0 +1,53 @@
+* [33mf72f1d1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtask2[m[33m)[m added getTaskNotifications_ReturnsListOfNotifications_WhenTaskExistsAndHasNotifications, getUserNotifications_ReturnsListOfNotifications_WhenUserExistsAndDoesNotHaveNotifications, getAllNotifications_ReturnsListOfNotifications_WhenNotificationsDoNotExist tests
+* [33m4300069[m added getUserNotifications_ReturnsListOfNotifications_WhenUserExists and getTaskNotifications_ReturnsListOfNotifications_WhenTaskExists tests
+* [33m7016dd4[m solved problem with variable name
+* [33m1b81abe[m made some changes
+* [33m9121164[m created TaskControllerTest class
+* [33m188eddd[m changed addUser, getUserById methods in UserControllerTest
+* [33mf4fe8e7[m Renamed NotificationControllerTest methods
+* [33ma99611c[m Renamed methods
+* [33md72b72d[m Added NotificationControllerTest class
+* [33md925855[m changed NotificationController returning values to ResponseEntity
+* [33m6dc7b06[m added UserControllerTest
+* [33mb8d976c[m InMemoryNotificationDAOTest added, InMemoryNotificationDAOTest beforeEach method altered
+* [33m87f0997[m BeforeEach method updated
+* [33ma01a074[m added addNotification method
+* [33m269e5f2[m InMemoryTaskDAO changed addTask method, added tests
+* [33m520abc2[m InMemoryTaskDAOTest class was created
+* [33m73c73ed[m[33m ([m[1;31morigin/task1[m[33m, [m[1;32mtask1[m[33m)[m changed InMemoryTaskServiceImpl addTask
+[31m|[m *   [33m345fd1e[m[33m ([m[1;31morigin/task2[m[33m)[m merged task1 into task2
+[31m|[m [32m|[m[31m\[m  
+[31m|[m [32m|[m[31m/[m  
+[31m|[m[31m/[m[32m|[m   
+* [32m|[m [33mc1fdbb6[m changed getAllNotifications method
+* [32m|[m [33m7b0b6e0[m deleted tests
+[33m|[m * [33m758684e[m added getTaskNotifications_ReturnsListOfNotifications_WhenTaskExistsAndHasNotifications, getUserNotifications_ReturnsListOfNotifications_WhenUserExistsAndDoesNotHaveNotifications, getAllNotifications_ReturnsListOfNotifications_WhenNotificationsDoNotExist tests
+[33m|[m * [33mad29456[m added getUserNotifications_ReturnsListOfNotifications_WhenUserExists and getTaskNotifications_ReturnsListOfNotifications_WhenTaskExists tests
+[33m|[m * [33m9142cf4[m solved problem with variable name
+[33m|[m *   [33m884e2c2[m merged task1 into task2
+[33m|[m [34m|[m[33m\[m  
+[33m|[m [34m|[m[33m/[m  
+[33m|[m[33m/[m[34m|[m   
+* [34m|[m [33m519e7b0[m renamed repository variables
+* [34m|[m [33m1a83968[m renamed list variables
+* [34m|[m [33maec909b[m renamed service variables
+* [34m|[m [33m6dc966b[m changed returning value for getTasksByUserId method to ResponseEntity
+* [34m|[m [33m7ddc914[m altered getUser/TaskNotifications methods
+* [34m|[m [33mbbdb969[m changed returning value for getTasksByUserId to Optional
+* [34m|[m [33mb965b53[m changed returning value for getUserNotifications and getTaskNotifications to Optional
+* [34m|[m [33mca55056[m resolved merge conflicts
+[35m|[m * [33mdc7927d[m made some changes
+[35m|[m * [33mcb5f9b7[m created TaskControllerTest class
+[35m|[m * [33m7abc8b3[m changed addUser, getUserById methods in UserControllerTest
+[35m|[m * [33mbc0d0d8[m Renamed NotificationControllerTest methods
+[35m|[m * [33m2b430e4[m Renamed methods
+[35m|[m * [33mb260a76[m Added NotificationControllerTest class
+[35m|[m * [33ma6bb273[m changed NotificationController returning values to ResponseEntity
+[35m|[m * [33m9005275[m added UserControllerTest
+[35m|[m * [33ma148b08[m InMemoryNotificationDAOTest added, InMemoryNotificationDAOTest beforeEach method altered
+[35m|[m * [33mdbb0d21[m BeforeEach method updated
+[35m|[m * [33m8aa2675[m added addNotification method
+[35m|[m * [33me73609e[m InMemoryTaskDAO changed addTask method, added tests
+[35m|[m * [33m7becfbb[m InMemoryTaskDAOTest class was created
+[35m|[m[35m/[m  
+* [33m82fcbec[m[33m ([m[1;31morigin/new_structure[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m project was created with completed task1
