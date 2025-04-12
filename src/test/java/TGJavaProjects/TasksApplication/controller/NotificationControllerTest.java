@@ -35,7 +35,7 @@ class NotificationControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean // Мок в Spring-контексте
+    @MockitoBean
     private NotificationService service;
 
     @Autowired
