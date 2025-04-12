@@ -30,8 +30,8 @@ public class TaskController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/user/{Id}")
-    public ResponseEntity<List<Task>> getTasksByUserId(@PathVariable("id") long userId) {
+    @GetMapping("/user/{UserId}")
+    public ResponseEntity<List<Task>> getTasksByUserId(@PathVariable long userId) {
         return taskService.getTasksByUserId(userId)
                 .map(tasks -> new ResponseEntity<>(tasks, HttpStatus.OK))
                 .orElseGet(() -> ResponseEntity.notFound().build());
