@@ -68,8 +68,9 @@ class InMemoryUserServiceImplTest {
     }
 
     @Test
-    void addUser_ReturnsUser() {
-
+    void addUser_ReturnsUser_WhenIdIsValid() {
+        when(userDAO.existsById(user.getUserId()))
+                .thenReturn(false);
         when(userDAO.addUser(user))
                 .thenReturn(user);
 
