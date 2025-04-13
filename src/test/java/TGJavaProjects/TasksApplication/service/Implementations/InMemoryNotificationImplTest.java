@@ -31,12 +31,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class InMemoryNotificationImplTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @InjectMocks
     private InMemoryNotificationImpl notificationService;
 
