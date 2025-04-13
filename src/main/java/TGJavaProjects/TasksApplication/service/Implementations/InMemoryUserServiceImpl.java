@@ -22,7 +22,7 @@ public class InMemoryUserServiceImpl implements UserService {
 
     @Override
     public Optional<User> addUser(User user) {
-        if (userDAO.existsById(user.getUserId())) {
+        if (!userDAO.existsById(user.getUserId())) {
             return Optional.ofNullable(userDAO.addUser(user));
         }
         return  Optional.empty();
