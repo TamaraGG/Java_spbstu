@@ -61,7 +61,7 @@ class InMemoryNotificationDAOTest {
     }
 
     @Test
-    void getUserNotifications_ReturnsListOfUserNotifications_WhenUserExists() {
+    void getUserNotifications_ReturnsListOfUserNotifications_WhenNotEmpty() {
 
         when(notification1.getUserId()).thenReturn(userId);
         when(notification2.getUserId()).thenReturn(userId + 1);
@@ -77,7 +77,7 @@ class InMemoryNotificationDAOTest {
     }
 
     @Test
-    void getUserNotifications_ReturnsListOfUserNotifications_WhenUserDoesNotExist() {
+    void getUserNotifications_ReturnsListOfUserNotifications_WhenEmpty() {
 
         when(notification1.getUserId()).thenReturn(userId);
         when(notification2.getUserId()).thenReturn(userId + 1);
@@ -92,7 +92,7 @@ class InMemoryNotificationDAOTest {
     }
 
     @Test
-    void getTaskNotifications_ReturnsListOfTaskNotifications_WhenTaskExists() {
+    void getTaskNotifications_ReturnsListOfTaskNotifications_WhenNotEmpty() {
 
         when(notification1.getTaskId()).thenReturn(taskId);
         when(notification2.getTaskId()).thenReturn(taskId + 1);
@@ -108,7 +108,7 @@ class InMemoryNotificationDAOTest {
     }
 
     @Test
-    void getTaskNotifications_ReturnsListOfTaskNotifications_WhenTaskDoesNotExist() {
+    void getTaskNotifications_ReturnsListOfTaskNotifications_WhenEmpty() {
 
         when(notification1.getTaskId()).thenReturn(taskId);
         when(notification2.getTaskId()).thenReturn(taskId + 1);
