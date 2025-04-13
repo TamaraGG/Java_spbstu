@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 //import org.mockito.Mock;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,12 +22,15 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class InMemoryTaskDAOTest {
 
-    private static final long USER_ID = 15L;
-    private static final long TASK_ID = 1L;
+
+    private InMemoryTaskDAO repository;
+
     private static final Task task1 = mock(Task.class);
     private static final Task task2 = mock(Task.class);
 
-    private InMemoryTaskDAO repository;
+    private static final long userId = 15L;
+    private static final long taskId = 1L;
+
 
     @BeforeEach
     void setUp() {
@@ -34,9 +38,9 @@ class InMemoryTaskDAOTest {
     }
 
     @Test
-    void getAllTasks() {
-        when(task1.getTaskId()).thenReturn(TASK_ID);
-        when(task2.getTaskId()).thenReturn(TASK_ID + 1);
+    void getAllTasks_ReturnsListOfTasks_WhenNotEmpty() {
+        when(task1.getTaskId()).thenReturn(taskId);
+        when(task2.getTaskId()).thenReturn(taskId + 1);
         repository.addTask(task1);
         repository.addTask(task2);
 
@@ -47,56 +51,100 @@ class InMemoryTaskDAOTest {
     }
 
     @Test
-    void InMemoryTaskDAO_GetTasksByUserId_ReturnListOfTasks() {
-        // arrange
-        when(task1.getUserId()).thenReturn(USER_ID);
-        when(task2.getUserId()).thenReturn(USER_ID);
-        when(task1.getTaskId()).thenReturn(TASK_ID);
-        when(task2.getTaskId()).thenReturn(TASK_ID + 1);
+    void getAllTasks_ReturnsListOfTasks_WhenEmpty() {
 
-        repository.addTask(task1);
-        repository.addTask(task2);
+        List<Task> receivedTasks = repository.getAllTasks();
 
-        // act
-        List<Task> receivedTasks = repository.getTasksByUserId(USER_ID);
-
-        // assert
         assertNotNull(receivedTasks);
-        assertEquals(2, receivedTasks.size());
+        assertEquals(0, receivedTasks.size());
     }
 
     @Test
-    void InMemoryTaskDAO_GetTaskById_ReturnTask() {
-        when(task1.getTaskId()).thenReturn(TASK_ID);
+    void getTasksByUserId_ReturnsListOfUserTasks_WhenNotEmpty() {
+
+        when(task1.getUserId()).thenReturn(userId);
+        when(task2.getUserId()).thenReturn(userId + 1);
+        repository.addTask(task1);
+        repository.addTask(task2);
+
+        List<Task> receivedTasks = repository.getTasksByUserId(userId);
+
+        assertNotNull(receivedTasks);
+        assertEquals(1, receivedTasks.size());
+    }
+
+    @Test
+    void getTasksByUserId_ReturnsListOfUserTasks_WhenEmpty() {
+
+        List<Task> receivedTasks = repository.getTasksByUserId(userId);
+
+        assertNotNull(receivedTasks);
+        assertEquals(0, receivedTasks.size());
+    }
+
+    @Test
+    void getTaskById_ReturnsTask_WhenExists() {
+        when(task1.getTaskId()).thenReturn(taskId);
         repository.addTask(task1);
 
-        Task recievedTask = repository.getTaskById(TASK_ID);
+        Task recievedTask = repository.getTaskById(taskId);
 
         assertNotNull(recievedTask);
         assertEquals(task1, recievedTask);
     }
 
     @Test
-    void InMemoryTaskDAO_AddTask_ReturnSavedTask() {
-        // arrange
-        when(task1.getTaskId()).thenReturn(TASK_ID);
+    void getTaskById_ReturnsTask_WhenDoesNotExist() {
+        when(task1.getTaskId()).thenReturn(taskId);
+        repository.addTask(task1);
 
-        // act
-        Task savedTask = repository.addTask(task1);
+        Task recievedTask = repository.getTaskById(taskId + 1);
 
-        // assert
-        assertNotNull(savedTask);
-        assertEquals(task1, savedTask);
+        assertNull(recievedTask);
     }
 
     @Test
-    void InMemoryTaskDAO_DeleteTask_ReturnDeletedTask() {
-        when(task1.getTaskId()).thenReturn(TASK_ID);
+    void addTask_ReturnsAddedTask_WhenNotNull() {
+        when(task1.getTaskId()).thenReturn(taskId);
 
+        Task savedTask = repository.addTask(task1);
+
+        assertNotNull(savedTask);
+        assertEquals(task1, savedTask);
+        assertEquals(1, repository.getAllTasks().size());
+    }
+
+    @Test
+    void addTask_ReturnsAddedTask_WhenNull() {
+
+        Task savedTask = repository.addTask(null);
+
+        assertNull(savedTask);
+        assertEquals(0, repository.getAllTasks().size());
+    }
+
+    @Test
+    void deleteTask_ReturnsDeletedTask_WhenTaskExists() {
+        when(task1.getTaskId()).thenReturn(taskId);
+        when(task2.getTaskId()).thenReturn(taskId + 1);
         repository.addTask(task1);
-        Task deletedTask = repository.deleteTask(task1.getTaskId());
+        repository.addTask(task2);
+
+        Task deletedTask = repository.deleteTask(taskId);
 
         assertNotNull(deletedTask);
         assertEquals(task1, deletedTask);
+        assertEquals( 1, repository.getAllTasks().size());
+    }
+
+    @Test
+    void deleteTask_ReturnsDeletedTask_WhenTaskDoesNotExist() {
+        when(task1.getTaskId()).thenReturn(taskId);
+        repository.addTask(task1);
+
+        Task deletedTask = repository.deleteTask(taskId + 1);
+
+        assertNull(deletedTask);
+        assertEquals(1, repository.getAllTasks().size());
     }
 }
