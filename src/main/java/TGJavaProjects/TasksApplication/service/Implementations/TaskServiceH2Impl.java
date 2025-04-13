@@ -1,12 +1,11 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
 import TGJavaProjects.TasksApplication.model.Task;
-import TGJavaProjects.TasksApplication.repository.H2TaskDAO;
-import TGJavaProjects.TasksApplication.repository.InMemoryTaskDAO;
+import TGJavaProjects.TasksApplication.repository.TaskDAO;
 import TGJavaProjects.TasksApplication.service.TaskService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,35 +13,37 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
-@Primary
-public class H2TaskServiceImpl implements TaskService {
+@Profile("H2")
+public class TaskServiceH2Impl implements TaskService {
 
-    private final InMemoryUserServiceImpl userService;
+    //private final InMemoryUserServiceImpl userService;
 
-    private final H2TaskDAO taskDAO;
+    private final TaskDAO taskDAO;
 
     @Override
     public List<Task> getAllTasks() {
-        return List.of();
+        return taskDAO.findAll();
     }
 
     @Override
     public Optional<Task> getTaskById(long taskId) {
-        return Optional.empty();
+        return taskDAO.findById(taskId);
     }
 
     @Override
     public Optional<List<Task>> getTasksByUserId(long userId) {
-        return Optional.empty();
+        return taskDAO.findByUserId(userId);
     }
 
     @Override
     public Optional<Task> addTask(Task task) {
-        return Optional.empty();
+        return Optional.of(taskDAO.save(task));
     }
 
     @Override
     public Optional<Task> deleteTask(long taskId) {
-        return Optional.empty();
+        Optional<Task> deletedTask = taskDAO.findById(taskId);
+        taskDAO.deleteById(taskId);
+        return deletedTask;
     }
 }
