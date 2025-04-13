@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Profile("InMemory")
 public class InMemoryTaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
