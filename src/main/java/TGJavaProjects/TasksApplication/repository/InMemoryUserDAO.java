@@ -17,7 +17,9 @@ public class InMemoryUserDAO {
     }
 
     public User addUser(User user) {
-        users.add(user);
+        if (user != null) {
+            users.add(user);
+        }
         return user;
     }
 
@@ -44,7 +46,8 @@ public class InMemoryUserDAO {
         var user = findUserById(userId);
         if (user != null) {
             users.remove(user);
+            return user;
         }
-        return user;
+        return null;
     }
 }
