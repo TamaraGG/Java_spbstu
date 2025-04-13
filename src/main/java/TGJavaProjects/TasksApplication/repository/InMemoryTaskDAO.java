@@ -28,7 +28,9 @@ public class InMemoryTaskDAO {
     }
 
     public Task addTask(Task task) {
-        tasks.add(task);
+        if (task != null) {
+            tasks.add(task);
+        }
         return task;
     }
 
