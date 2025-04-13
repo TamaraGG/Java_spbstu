@@ -28,7 +28,7 @@ public class InMemoryTaskDAO {
     }
 
     public Task addTask(Task task) {
-        if (task != null) {
+        if (task != null && !existsById(task.getTaskId())) {
             tasks.add(task);
         }
         return task;
@@ -40,5 +40,9 @@ public class InMemoryTaskDAO {
             tasks.remove(task);
         }
         return task;
+    }
+
+    public boolean existsById(long taskId) {
+        return getTaskById(taskId) != null;
     }
 }
