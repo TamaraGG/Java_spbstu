@@ -9,6 +9,7 @@ import TGJavaProjects.TasksApplication.repository.NotificationRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import lombok.AllArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Profile("InMemory")
 public class InMemoryNotificationImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
