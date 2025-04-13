@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-@Controller
+@RestController
 @RequestMapping("/api/v1/tasks")
 @AllArgsConstructor
 public class TaskController {
@@ -30,7 +30,7 @@ public class TaskController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/user/{UserId}")
+    @GetMapping("/user/{userId}")
     public ResponseEntity<List<Task>> getTasksByUserId(@PathVariable long userId) {
         return taskService.getTasksByUserId(userId)
                 .map(tasks -> new ResponseEntity<>(tasks, HttpStatus.OK))
