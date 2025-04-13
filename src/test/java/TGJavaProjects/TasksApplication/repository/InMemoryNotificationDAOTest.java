@@ -24,7 +24,6 @@ import static org.mockito.Mockito.times;
 @ExtendWith(MockitoExtension.class)
 class InMemoryNotificationDAOTest {
 
-    @InjectMocks
     private InMemoryNotificationDAO repository;
 
     private static final Notification notification1 = mock(Notification.class);
@@ -36,7 +35,7 @@ class InMemoryNotificationDAOTest {
 
     @BeforeEach
     void setUp() {
-
+        repository = new InMemoryNotificationDAO();
     }
 
     @Test
