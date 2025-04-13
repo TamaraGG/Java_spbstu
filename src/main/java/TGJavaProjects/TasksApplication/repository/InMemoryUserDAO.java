@@ -17,7 +17,7 @@ public class InMemoryUserDAO {
     }
 
     public User addUser(User user) {
-        if (user != null) {
+        if (user != null && existsById(user.getUserId())) {
             users.add(user);
         }
         return user;
@@ -49,5 +49,9 @@ public class InMemoryUserDAO {
             return user;
         }
         return null;
+    }
+
+    public boolean existsById(long userId) {
+        return findUserById(userId) != null;
     }
 }
