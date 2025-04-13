@@ -17,7 +17,7 @@ public class InMemoryUserDAO {
     }
 
     public User addUser(User user) {
-        if (user != null && existsById(user.getUserId())) {
+        if (user != null && !existsById(user.getUserId())) {
             users.add(user);
         }
         return user;
