@@ -4,6 +4,7 @@ import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.service.TaskService;
 import lombok.AllArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +35,7 @@ public class TaskServiceH2Impl implements TaskService {
     }
 
     @Override
-    public Optional<Task> addTask(Task task) {
+    public Optional<Task> addTask(@NotNull Task task) {
         if (userService.findUserById(task.getUserId()).isPresent()){
             return Optional.of(taskRepository.save(task));
         }
