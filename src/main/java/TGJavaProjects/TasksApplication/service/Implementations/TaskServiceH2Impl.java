@@ -16,35 +16,35 @@ import java.util.Optional;
 public class TaskServiceH2Impl implements TaskService {
 
     private final UserServiceH2Impl userService;
-    private final TaskRepository taskDAO;
+    private final TaskRepository taskRepository;
 
     @Override
     public List<Task> getAllTasks() {
-        return taskDAO.findAll();
+        return taskRepository.findAll();
     }
 
     @Override
     public Optional<Task> getTaskById(long taskId) {
-        return taskDAO.findById(taskId);
+        return taskRepository.findById(taskId);
     }
 
     @Override
     public Optional<List<Task>> getTasksByUserId(long userId) {
-        return taskDAO.findByUserId(userId);
+        return taskRepository.findByUserId(userId);
     }
 
     @Override
     public Optional<Task> addTask(Task task) {
         if (userService.findUserById(task.getUserId()).isPresent()){
-            return Optional.of(taskDAO.save(task));
+            return Optional.of(taskRepository.save(task));
         }
         return Optional.empty();
     }
 
     @Override
     public Optional<Task> deleteTask(long taskId) {
-        Optional<Task> deletedTask = taskDAO.findById(taskId);
-        taskDAO.deleteById(taskId);
+        Optional<Task> deletedTask = taskRepository.findById(taskId);
+        taskRepository.deleteById(taskId);
         return deletedTask;
     }
 }
