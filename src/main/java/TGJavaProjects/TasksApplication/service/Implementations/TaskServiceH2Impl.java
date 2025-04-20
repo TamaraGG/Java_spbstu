@@ -15,8 +15,7 @@ import java.util.Optional;
 @Profile("H2")
 public class TaskServiceH2Impl implements TaskService {
 
-    //private final InMemoryUserServiceImpl userService;
-
+    private final UserServiceH2Impl userService;
     private final TaskRepository taskDAO;
 
     @Override
@@ -36,7 +35,10 @@ public class TaskServiceH2Impl implements TaskService {
 
     @Override
     public Optional<Task> addTask(Task task) {
-        return Optional.of(taskDAO.save(task));
+        if (userService.findUserById(task.getUserId()).isPresent()){
+            return Optional.of(taskDAO.save(task));
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -46,3 +48,4 @@ public class TaskServiceH2Impl implements TaskService {
         return deletedTask;
     }
 }
+
