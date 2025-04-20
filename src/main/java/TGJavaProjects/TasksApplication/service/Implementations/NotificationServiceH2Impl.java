@@ -1,6 +1,7 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
 import TGJavaProjects.TasksApplication.model.Notification;
+import TGJavaProjects.TasksApplication.repository.NotificationRepository;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -13,18 +14,23 @@ import java.util.Optional;
 @AllArgsConstructor
 @Profile("H2")
 public class NotificationServiceH2Impl implements NotificationService {
+
+    private final NotificationRepository notificationRepository;
+    private final TaskServiceH2Impl taskService;
+    private final UserServiceH2Impl userService;
+
     @Override
     public List<Notification> getAllNotifications() {
-        return List.of();
+        return notificationRepository.findAll();
     }
 
     @Override
     public Optional<List<Notification>> getUserNotifications(long userId) {
-        return Optional.empty();
+        return notificationRepository.findByUserId(userId);
     }
 
     @Override
     public Optional<List<Notification>> getTaskNotifications(long taskId) {
-        return Optional.empty();
+        return notificationRepository.findByTaskId(taskId);
     }
 }
