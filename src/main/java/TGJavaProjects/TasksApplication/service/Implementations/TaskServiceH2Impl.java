@@ -1,10 +1,9 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
 import TGJavaProjects.TasksApplication.model.Task;
-import TGJavaProjects.TasksApplication.repository.TaskDAO;
+import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.service.TaskService;
 import lombok.AllArgsConstructor;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +17,7 @@ public class TaskServiceH2Impl implements TaskService {
 
     //private final InMemoryUserServiceImpl userService;
 
-    private final TaskDAO taskDAO;
+    private final TaskRepository taskDAO;
 
     @Override
     public List<Task> getAllTasks() {
