@@ -16,8 +16,6 @@ import java.util.Optional;
 public class NotificationServiceH2Impl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final TaskServiceH2Impl taskService;
-    private final UserServiceH2Impl userService;
 
     @Override
     public List<Notification> getAllNotifications() {
