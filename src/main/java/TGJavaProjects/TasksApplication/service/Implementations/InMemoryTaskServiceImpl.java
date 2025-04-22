@@ -34,7 +34,8 @@ public class InMemoryTaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<Task> findTasksByUserId(long userId) {
+    public List<Task> findTasksByUserId(long userId)
+        throws ResourceNotFoundException {
         if (!userDAO.existsById(userId)) {
             throw new ResourceNotFoundException(
                     "cannot find tasks. user " + userId + " not found"
@@ -44,7 +45,8 @@ public class InMemoryTaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Task addTask(Task task) {
+    public Task addTask(Task task)
+        throws IllegalArgumentException, DuplicateResourceException {
 
         if (task == null) {
             throw new IllegalArgumentException("task cannot be null");
@@ -63,7 +65,8 @@ public class InMemoryTaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void deleteTask(long taskId) {
+    public void deleteTask(long taskId)
+        throws ResourceNotFoundException, RuntimeException {
         if (!taskDAO.existsById(taskId)) {
             throw new ResourceNotFoundException(
                     "delete error. task with id " + taskId +
