@@ -1,48 +1,53 @@
 package TGJavaProjects.TasksApplication.repository;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.model.Task;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class InMemoryTaskDAO {
     private final List<Task> tasks = new ArrayList<>();
 
     public List<Task> getAllTasks() {
-        return tasks;
+        return List.copyOf(tasks);
     }
 
-    public Task getTaskById(long taskId) {
+    public Optional<Task> findTaskById(Long taskId) {
         return tasks.stream()
-                .filter(task -> task.getTaskId() == taskId)
-                .findFirst()
-                .orElse(null);
+                .filter(task -> task.getTaskId().equals(taskId))
+                .findFirst();
     }
 
-    public List<Task> getTasksByUserId(long userId) {
+    public List<Task> getTasksByUserId(Long userId) {
         return tasks.stream()
-                .filter(task -> task.getUserId() == userId)
+                .filter(task -> task.getUserId().equals(userId))
                 .toList();
     }
 
     public Task addTask(Task task) {
-        if (task != null && !existsById(task.getTaskId())) {
-            tasks.add(task);
+        if (task == null) {
+            throw new IllegalArgumentException(
+                    "task cannot be null");
         }
+        if (existsById(task.getTaskId())) {
+            throw new DuplicateResourceException(
+                    "task id " + task.getTaskId() + " already exists."
+            );
+        }
+        tasks.add(task);
         return task;
     }
 
-    public Task deleteTask(long taskId) {
-        var task = getTaskById(taskId);
-        if (task != null) {
-            tasks.remove(task);
-        }
-        return task;
+    public boolean deleteTask(long taskId) {
+        return tasks.removeIf(t -> t.getTaskId() == taskId);
     }
 
     public boolean existsById(long taskId) {
-        return getTaskById(taskId) != null;
+        return tasks.stream()
+                .anyMatch(t -> t.getTaskId().equals(taskId));
     }
 }
