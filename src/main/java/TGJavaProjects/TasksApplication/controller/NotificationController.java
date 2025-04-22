@@ -18,19 +18,19 @@ public class NotificationController {
 
     @GetMapping
     public List<Notification> getAllNotifications() {
-        return notificationService.getAllNotifications();
+        return notificationService.findAllNotifications();
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable long userId) {
-        return notificationService.getUserNotifications(userId)
+        return notificationService.findUserNotifications(userId)
                 .map(notifications -> new ResponseEntity<>(notifications, HttpStatus.OK))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("task/{taskId}")
     public ResponseEntity<List<Notification>> getTaskNotifications(@PathVariable long taskId) {
-        return notificationService.getTaskNotifications(taskId)
+        return notificationService.findTaskNotifications(taskId)
                 .map(notifications -> new ResponseEntity<>(notifications, HttpStatus.OK))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
