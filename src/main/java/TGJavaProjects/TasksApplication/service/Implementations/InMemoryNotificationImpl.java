@@ -61,6 +61,16 @@ public class InMemoryNotificationImpl implements NotificationService {
         if (notification == null) {
             throw new IllegalArgumentException("notification cannot be null");
         }
+        if (notification.getNotificationId() == null) {
+            throw new IllegalArgumentException("notification id cannot be null");
+        }
+        if (notification.getTaskId() == null) {
+            throw new IllegalArgumentException("task id cannot be null for notification");
+        }
+        if (notification.getText() == null || notification.getText().isBlank()) {
+            throw new IllegalArgumentException("notification text cannot be null");
+        }
+
         if (!taskDAO.existsById(notification.getTaskId())) {
             throw new ResourceNotFoundException(
                     "cannot find notification. task " + notification.getTaskId() +

@@ -32,7 +32,7 @@ public class InMemoryNotificationDAO {
     public Notification addNotification(Notification notification)
         throws IllegalArgumentException, DuplicateResourceException {
 
-        if (notification == null) {
+        if (notification == null || notification.getNotificationId() == null) {
             throw new IllegalArgumentException(
                     "notification cannot be null");
         }
