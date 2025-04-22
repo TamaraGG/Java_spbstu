@@ -61,9 +61,9 @@ public class UserController {
     public ResponseEntity<User> updateUser(@PathVariable("id") long userId, @RequestBody User user)
         throws ResourceNotFoundException, ResponseStatusException {
 
-        if (user.getUserId() != userId) {
+        if (user.getUserId() == null || user.getUserId() != userId) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "User ID in path must match User ID in body");
+                    HttpStatus.BAD_REQUEST, "user id in path must match user id in body");
         }
         try {
             User updatedUser = userService.updateUser(user);
