@@ -1,5 +1,6 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.repository.InMemoryUserDAO;
 import TGJavaProjects.TasksApplication.model.User;
@@ -23,17 +24,18 @@ public class InMemoryUserServiceImpl implements UserService {
     }
 
     @Override
-    public User addUser(User user) {
+    public User addUser(User user)
+            throws IllegalArgumentException, DuplicateResourceException {
 
         if (user == null) {
             throw new IllegalArgumentException("user cannot be null");
         }
-//
-//        if (userDAO.existsById(user.getUserId())) {
-//            return Optional.ofNullable(userDAO.addUser(user));
-//        }
+        try {
+            return userDAO.addUser(user);
+        } catch (DuplicateResourceException | IllegalArgumentException e) {
+            throw e;
+        }
 
-        return userDAO.addUser(user);
     }
 
     @Override
@@ -44,7 +46,8 @@ public class InMemoryUserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(User user) {
+    public User updateUser(User user)
+            throws IllegalArgumentException, ResourceNotFoundException {
 
         if (user == null) {
             throw new IllegalArgumentException("user cannot be null");
@@ -63,7 +66,8 @@ public class InMemoryUserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(long userId) {
+    public void deleteUser(long userId)
+            throws ResourceNotFoundException, RuntimeException{
         if (!userDAO.existsById(userId)) {
             throw new ResourceNotFoundException(
                     "delete error. user with id " + userId +
