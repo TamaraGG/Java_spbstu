@@ -22,7 +22,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
     private final InMemoryUserDAO userDAO;
 
     @Override
-    public List<Task> getAllTasks() {
+    public List<Task> findAllTasks() {
         return taskDAO.getAllTasks();
     }
 

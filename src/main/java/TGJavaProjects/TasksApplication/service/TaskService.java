@@ -8,7 +8,7 @@ import java.util.List;
 @Service
 public interface TaskService {
 
-    public List<Task> getAllTasks();
+    public List<Task> findAllTasks();
     public Task findTaskById(long taskId);
     public List<Task> findTasksByUserId(long userId);
     public Task addTask (Task task);

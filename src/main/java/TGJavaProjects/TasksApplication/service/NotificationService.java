@@ -9,8 +9,8 @@ import java.util.Optional;
 @Service
 public interface NotificationService {
 
-    public List<Notification> getAllNotifications();
-    public Optional<List<Notification>> getUserNotifications(long userId);
-    public Optional<List<Notification>> getTaskNotifications(long taskId);
+    public List<Notification> findAllNotifications();
+    public Optional<List<Notification>> findUserNotifications(long userId);
+    public Optional<List<Notification>> findTaskNotifications(long taskId);
 
 }
