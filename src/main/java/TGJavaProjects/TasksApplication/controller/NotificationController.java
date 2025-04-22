@@ -1,5 +1,6 @@
 package TGJavaProjects.TasksApplication.controller;
 
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import lombok.AllArgsConstructor;
@@ -23,15 +24,26 @@ public class NotificationController {
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable long userId) {
-        return notificationService.findUserNotifications(userId)
-                .map(notifications -> new ResponseEntity<>(notifications, HttpStatus.OK))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+
+        try {
+            List<Notification> notifications = notificationService.findNotificationsByUserId(userId);
+            return ResponseEntity.ok(notifications);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        }
+
     }
 
-    @GetMapping("task/{taskId}")
+    @GetMapping("/task/{taskId}")
     public ResponseEntity<List<Notification>> getTaskNotifications(@PathVariable long taskId) {
-        return notificationService.findTaskNotifications(taskId)
-                .map(notifications -> new ResponseEntity<>(notifications, HttpStatus.OK))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+
+        try {
+            List<Notification> notifications = notificationService.findNotificationsByTaskId(taskId);
+            return ResponseEntity.ok(notifications);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        }
+
     }
 }
+
