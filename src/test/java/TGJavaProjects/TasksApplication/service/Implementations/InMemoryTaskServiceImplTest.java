@@ -1,10 +1,14 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.model.User;
 import TGJavaProjects.TasksApplication.repository.InMemoryNotificationDAO;
 import TGJavaProjects.TasksApplication.repository.InMemoryTaskDAO;
+import TGJavaProjects.TasksApplication.repository.InMemoryUserDAO;
+import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,164 +31,220 @@ class InMemoryTaskServiceImplTest {
     private InMemoryTaskServiceImpl taskService;
 
     @Mock
-    private InMemoryUserServiceImpl userService;
+    private InMemoryUserDAO userDAO;
     @Mock
     private InMemoryTaskDAO taskDAO;
 
-    private User user;
-    private Task task;
+    private Task task1;
+    private Task task2;
+    private static final long USER_ID_1 = 1L;
+    private static final long TASK_ID_1 = 10L;
+    private static final long TASK_ID_2 = 20L;
+    private static final long NON_EXISTENT_TASK_ID = 4L;
+    private static final long NON_EXISTENT_USER_ID = 3L;
 
     @BeforeEach
     void setUp() {
+        task1 = Task.builder()
+                .taskId(TASK_ID_1)
+                .userId(USER_ID_1)
+                .taskText("Test Task 1")
+                .creationDate(LocalDateTime.now().minusDays(1))
+                .isComplete(false)
+                .build();
 
-        user = new User(
-                1L,
-                "Jane",
-                "Doe",
-                "test@gmail.com"
-        );
-
-        task = new Task(
-                1L, "test task",
-                LocalDateTime.now(), LocalDateTime.now(), true, 1L
-        );
+        task2 = Task.builder()
+                .taskId(TASK_ID_2)
+                .userId(USER_ID_1)
+                .taskText("Test Task 2")
+                .creationDate(LocalDateTime.now())
+                .isComplete(true)
+                .build();
     }
 
+// findAllTasks
 
     @Test
-    void getAllTasks_ReturnsListOfTasks_WhenNotEmpty() {
+    void findAllTasks_ReturnsListOfTasks() {
+        List<Task> expectedTasks = List.of(task1, task2);
+        when(taskDAO.getAllTasks()).thenReturn(expectedTasks);
 
-        when(taskDAO.getAllTasks())
-                .thenReturn(List.of(task));
+        List<Task> actualTasks = taskService.findAllTasks();
 
-        List<Task> result = taskService.getAllTasks();
-
-        assertEquals(1, result.size());
+        assertNotNull(actualTasks);
+        assertEquals(expectedTasks, actualTasks);
+        assertEquals(2, actualTasks.size());
         verify(taskDAO, times(1)).getAllTasks();
     }
 
     @Test
-    void getAllTasks_ReturnsListOfTasks_WhenEmpty() {
+    void findAllTasks_ReturnsEmptyList() {
+        when(taskDAO.getAllTasks()).thenReturn(Collections.emptyList());
 
-        when(taskDAO.getAllTasks())
-                .thenReturn(List.of());
+        List<Task> actualTasks = taskService.findAllTasks();
 
-        List<Task> result = taskService.getAllTasks();
-
-        assertEquals(0, result.size());
+        assertNotNull(actualTasks);
+        assertTrue(actualTasks.isEmpty());
         verify(taskDAO, times(1)).getAllTasks();
+    }
 
+    // findTaskById
+
+    @Test
+    void findTaskById_ReturnsTask_WhenFound() {
+        when(taskDAO.findTaskById(TASK_ID_1)).thenReturn(Optional.of(task1));
+
+        Task foundTask = taskService.findTaskById(TASK_ID_1);
+
+        assertNotNull(foundTask);
+        assertEquals(task1, foundTask);
+        verify(taskDAO, times(1)).findTaskById(TASK_ID_1);
     }
 
     @Test
-    void getTaskById_ReturnsTask_WhenTaskExists() {
+    void findTaskById_ThrowsNotFound_WhenNotFound() {
+        when(taskDAO.findTaskById(NON_EXISTENT_TASK_ID)).thenReturn(Optional.empty());
 
-        when(taskDAO.getTaskById(task.getTaskId()))
-                .thenReturn(task);
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> taskService.findTaskById(NON_EXISTENT_TASK_ID)
+        );
 
-        Optional<Task> result = taskService.getTaskById(task.getTaskId());
+        assertTrue(exception.getMessage().contains("task " + NON_EXISTENT_TASK_ID + " not found"));
+        verify(taskDAO, times(1)).findTaskById(NON_EXISTENT_TASK_ID);
+    }
 
-        assert(result.isPresent());
-        assertEquals(task, result.get());
-        verify(taskDAO, times(1)).getTaskById(task.getTaskId());
+    // findTasksByUserId
 
+    @Test
+    void findTasksByUserId_ReturnsTasks_WhenUserExists() {
+        List<Task> expectedTasks = List.of(task1, task2);
+        when(userDAO.existsById(USER_ID_1)).thenReturn(true);
+        when(taskDAO.findTasksByUserId(USER_ID_1)).thenReturn(expectedTasks);
+
+        List<Task> actualTasks = taskService.findTasksByUserId(USER_ID_1);
+
+        assertNotNull(actualTasks);
+        assertEquals(expectedTasks, actualTasks);
+        verify(userDAO, times(1)).existsById(USER_ID_1);
+        verify(taskDAO, times(1)).findTasksByUserId(USER_ID_1);
     }
 
     @Test
-    void getTaskById_ReturnsTask_WhenTaskDoesNotExist() {
+    void findTasksByUserId_ReturnsEmptyList_WhenUserExistsButNoTasks() {
+        when(userDAO.existsById(USER_ID_1)).thenReturn(true);
+        when(taskDAO.findTasksByUserId(USER_ID_1)).thenReturn(Collections.emptyList());
 
-        when(taskDAO.getTaskById(task.getTaskId()))
-                .thenReturn(null);
+        List<Task> actualTasks = taskService.findTasksByUserId(USER_ID_1);
 
-        Optional<Task> result = taskService.getTaskById(task.getTaskId());
-
-        assert(result.isEmpty());
-        verify(taskDAO, times(1)).getTaskById(task.getTaskId());
-
+        assertNotNull(actualTasks);
+        assertTrue(actualTasks.isEmpty());
+        verify(userDAO, times(1)).existsById(USER_ID_1);
+        verify(taskDAO, times(1)).findTasksByUserId(USER_ID_1);
     }
 
     @Test
-    void getTasksByUserId_ReturnsListOfTasks_WhenUserExists() {
+    void findTasksByUserId_ThrowsNotFound_WhenUserDoesNotExist() {
+        when(userDAO.existsById(NON_EXISTENT_USER_ID)).thenReturn(false);
 
-        when(userService.findUserById(task.getUserId()))
-                .thenReturn(Optional.ofNullable(user));
-        when(taskDAO.getTasksByUserId(task.getUserId()))
-                .thenReturn(List.of(task));
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> taskService.findTasksByUserId(NON_EXISTENT_USER_ID)
+        );
 
-        Optional<List<Task>> result = taskService.getTasksByUserId(task.getUserId());
+        assertTrue(exception.getMessage().contains("cannot find tasks. user " + NON_EXISTENT_USER_ID + " not found"));
+        verify(userDAO, times(1)).existsById(NON_EXISTENT_USER_ID);
+        verify(taskDAO, never()).findTasksByUserId(anyLong());
+    }
 
-        assert(result.isPresent());
-        assertEquals(1, result.get().size());
-        verify(taskDAO, times(1)).getTasksByUserId(task.getUserId());
+    // addTask
 
+    @Test
+    void addTask_ReturnsTask_WhenValidAndUserExists() {
+        when(userDAO.existsById(USER_ID_1)).thenReturn(true);
+        when(taskDAO.addTask(any(Task.class))).thenReturn(task1);
+
+        Task addedTask = taskService.addTask(task1);
+
+        assertNotNull(addedTask);
+        assertEquals(task1, addedTask);
+        assertNotNull(task1.getCreationDate());
+        assertNotNull(task1.getIsComplete());
+        verify(userDAO, times(1)).existsById(USER_ID_1);
+        verify(taskDAO, times(1)).addTask(task1);
+    }
+
+
+    @Test
+    void addTask_ThrowsNotFound_WhenUserDoesNotExist() {
+        when(userDAO.existsById(USER_ID_1)).thenReturn(false);
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> taskService.addTask(task1)
+        );
+        assertTrue(exception.getMessage().contains("cannot find task. user " + USER_ID_1 + "not found"));
+        verify(userDAO, times(1)).existsById(USER_ID_1);
+        verify(taskDAO, never()).addTask(any(Task.class));
     }
 
     @Test
-    void getTasksByUserId_ReturnsListOfTasks_WhenUserDoesNotExist() {
+    void addTask_ThrowsDuplicateException_WhenDaoThrows() {
 
-        when(userService.findUserById(task.getUserId()))
-                .thenReturn(Optional.empty());
+        when(userDAO.existsById(USER_ID_1)).thenReturn(true);
+        when(taskDAO.addTask(task1)).thenThrow(new DuplicateResourceException("ID exists"));
 
-        Optional<List<Task>> result = taskService.getTasksByUserId(task.getUserId());
-
-        assert(result.isEmpty());
-        verify(taskDAO, times(0)).getTasksByUserId(task.getUserId());
-
+        assertThrows(DuplicateResourceException.class, () -> taskService.addTask(task1));
+        verify(userDAO, times(1)).existsById(USER_ID_1);
+        verify(taskDAO, times(1)).addTask(task1);
     }
 
     @Test
-    void addTask_ReturnsTask_WhenUserExists() {
+    void addTask_ThrowsIllegalArgument_WhenTaskIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> taskService.addTask(null));
+        verify(userDAO, never()).existsById(anyLong());
+        verify(taskDAO, never()).addTask(any(Task.class));
+    }
 
-        when(userService.findUserById(task.getUserId()))
-                .thenReturn(Optional.ofNullable(user));
-        when(taskDAO.addTask(task))
-                .thenReturn(task);
+    // deleteTask
 
-        Optional<Task> result = taskService.addTask(task);
+    @Test
+    void deleteTask_CompletesNormally_WhenSuccessful() {
+        when(taskDAO.existsById(TASK_ID_1)).thenReturn(true);
+        when(taskDAO.deleteTask(TASK_ID_1)).thenReturn(true);
 
-        assert(result.isPresent());
-        assertEquals(task, result.get());
-        verify(taskDAO, times(1)).addTask(task);
+        assertDoesNotThrow(() -> taskService.deleteTask(TASK_ID_1));
 
+        verify(taskDAO, times(1)).existsById(TASK_ID_1);
+        verify(taskDAO, times(1)).deleteTask(TASK_ID_1);
     }
 
     @Test
-    void addTask_ReturnsTask_WhenUserDoesNotExist() {
+    void deleteTask_ThrowsNotFound_WhenTaskDoesNotExist() {
+        when(taskDAO.existsById(NON_EXISTENT_TASK_ID)).thenReturn(false);
 
-        when(userService.findUserById(task.getUserId()))
-                .thenReturn(Optional.empty());
-
-        Optional<Task> result = taskService.addTask(task);
-
-        assert(result.isEmpty());
-        verify(taskDAO, times(0)).addTask(task);
-
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> taskService.deleteTask(NON_EXISTENT_TASK_ID)
+        );
+        assertTrue(exception.getMessage().contains("delete error. task with id " + NON_EXISTENT_TASK_ID + " not found"));
+        verify(taskDAO, times(1)).existsById(NON_EXISTENT_TASK_ID);
+        verify(taskDAO, never()).deleteTask(anyLong());
     }
 
     @Test
-    void deleteTask_ReturnDeletedTask_WhenTaskExists() {
+    void deleteTask_ThrowsRuntimeException_WhenDaoDeleteFails() {
+        when(taskDAO.existsById(TASK_ID_1)).thenReturn(true);
+        when(taskDAO.deleteTask(TASK_ID_1)).thenReturn(false);
 
-        when(taskDAO.deleteTask(task.getTaskId()))
-                .thenReturn(task);
-
-        Optional<Task> result = taskService.deleteTask(task.getTaskId());
-
-        assert(result.isPresent());
-        assertEquals(task, result.get());
-        verify(taskDAO, times(1)).deleteTask(task.getTaskId());
-
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> taskService.deleteTask(TASK_ID_1)
+        );
+        assertTrue(exception.getMessage().contains("delete failed for task " + TASK_ID_1));
+        verify(taskDAO, times(1)).existsById(TASK_ID_1);
+        verify(taskDAO, times(1)).deleteTask(TASK_ID_1);
     }
 
-    @Test
-    void deleteTask_ReturnDeletedTask_WhenTaskDoesNotExist() {
-
-        when(taskDAO.deleteTask(task.getTaskId()))
-                .thenReturn(null);
-
-        Optional<Task> result = taskService.deleteTask(task.getTaskId());
-
-        assert(result.isEmpty());
-        verify(taskDAO, times(1)).deleteTask(task.getTaskId());
-
-    }
 }
+
