@@ -9,7 +9,7 @@ import java.util.List;
 public interface NotificationService {
 
     public List<Notification> findAllNotifications();
-    // List<Notification> findUserNotifications(long userId);
+    public List<Notification> findNotificationsByUserId(long userId);
     public List<Notification> findNotificationsByTaskId(long taskId);
     public Notification findNotificationById(long notificationId);
     public Notification addNotification(Notification notification);
