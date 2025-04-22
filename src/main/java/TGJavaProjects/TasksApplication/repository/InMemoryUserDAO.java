@@ -1,5 +1,6 @@
 package TGJavaProjects.TasksApplication.repository;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.model.User;
 import org.springframework.stereotype.Repository;
 
@@ -24,7 +25,7 @@ public class InMemoryUserDAO {
             throw new IllegalArgumentException("user cannot be null");
         }
         if (existsById(user.getUserId())) {
-            throw new DuplicateResouceExeption(
+            throw new DuplicateResourceException(
                     "user id " + user.getUserId() + " already exists."
             );
         }
