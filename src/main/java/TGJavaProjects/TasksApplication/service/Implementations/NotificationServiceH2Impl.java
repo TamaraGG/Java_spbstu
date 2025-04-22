@@ -5,6 +5,7 @@ import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.NotificationRepository;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
+import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,7 @@ public class NotificationServiceH2Impl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<Notification> findAllNotifications() {
@@ -29,9 +31,16 @@ public class NotificationServiceH2Impl implements NotificationService {
     }
 
     @Override
-    public List<Notification> findNotificationsByUserId(long userId) {
-        return List.of();
+    public List<Notification> findNotificationsByUserId(long userId)
+            throws ResourceNotFoundException {
+
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("Cannot find notifications. User with id " + userId + " not found");
+        }
+
+        return notificationRepository.findByTaskUserUserId(userId);
     }
+
 
     @Override
     public List<Notification> findNotificationsByTaskId(long taskId)
