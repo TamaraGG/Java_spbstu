@@ -30,9 +30,9 @@ public class InMemoryUserServiceImpl implements UserService {
         if (user == null) {
             throw new IllegalArgumentException("user cannot be null");
         }
-        if (user.getUserId() == null) {
-            throw new IllegalArgumentException("user id cannot be null");
-        }
+//        if (user.getUserId() == null) {
+//            throw new IllegalArgumentException("user id cannot be null");
+//        }
         try {
             return userDAO.addUser(user);
         } catch (DuplicateResourceException | IllegalArgumentException e) {
@@ -55,9 +55,9 @@ public class InMemoryUserServiceImpl implements UserService {
         if (user == null) {
             throw new IllegalArgumentException("user cannot be null");
         }
-        if (user.getUserId() == null) {
-            throw new IllegalArgumentException("user id cannot be null");
-        }
+//        if (user.getUserId() == null) {
+//            throw new IllegalArgumentException("user id cannot be null");
+//        }
         if (!userDAO.existsById(user.getUserId())) {
             throw new ResourceNotFoundException(
                     "update error. user with id " + user.getUserId() +

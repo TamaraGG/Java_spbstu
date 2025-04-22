@@ -53,15 +53,15 @@ public class InMemoryTaskServiceImpl implements TaskService {
             throw new IllegalArgumentException("task cannot be null");
         }
 
-        if (task.getTaskId() == null) {
-            throw new IllegalArgumentException("task id cannot be null");
-        }
-        if (task.getUserId() == null) {
-            throw new IllegalArgumentException("user id cannot be null for task");
-        }
-        if (task.getTaskText() == null || task.getTaskText().isBlank()) {
-            throw new IllegalArgumentException("task text cannot be null");
-        }
+//        if (task.getTaskId() == null) {
+//            throw new IllegalArgumentException("task id cannot be null");
+//        }
+//        if (task.getUserId() == null) {
+//            throw new IllegalArgumentException("user id cannot be null for task");
+//        }
+//        if (task.getTaskText() == null || task.getTaskText().isBlank()) {
+//            throw new IllegalArgumentException("task text cannot be null");
+//        }
 
         if (!userDAO.existsById(task.getUserId())) {
             throw new ResourceNotFoundException(
@@ -70,12 +70,12 @@ public class InMemoryTaskServiceImpl implements TaskService {
             );
         }
 
-        if (task.getCreationDate() == null) {
-            task.setCreationDate(LocalDateTime.now());
-        }
-        if (task.getIsComplete() == null) {
-            task.setIsComplete(false);
-        }
+//        if (task.getCreationDate() == null) {
+//            task.setCreationDate(LocalDateTime.now());
+//        }
+//        if (task.getIsComplete() == null) {
+//            task.setIsComplete(false);
+//        }
 
         try {
             return taskDAO.addTask(task);
