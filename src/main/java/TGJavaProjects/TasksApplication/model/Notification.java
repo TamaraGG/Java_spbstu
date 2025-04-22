@@ -18,7 +18,9 @@ public class Notification {
     @NonNull
     private String text;
 
+    @NonNull
     private LocalDateTime date;
 
+    @NonNull
     private Long TaskId;
 }
