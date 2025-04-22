@@ -1,12 +1,15 @@
 package TGJavaProjects.TasksApplication.controller;
 
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.User;
 import TGJavaProjects.TasksApplication.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.List;
@@ -26,16 +29,53 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable("id") long userId) {
-        return userService.findUserById(userId)
-                .map(u-> new ResponseEntity<>(u, HttpStatus.OK))
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            User user = userService.findUserById(userId);
+            return ResponseEntity.ok(user);
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        }
     }
 
     @PostMapping
     public ResponseEntity<User> addUser(@RequestBody User user) {
-        return userService.addUser(user)
-                .map(u -> ResponseEntity.created(URI.create("/api/v1/users/" + u.getUserId())).body(u))
-                .orElse(ResponseEntity.badRequest().build());
+        try {
+            User createdUser = userService.addUser(user);
+            return ResponseEntity
+                    .created(URI.create("/api/v1/users/" + createdUser.getUserId()))
+                    .body(createdUser);
+        } catch (DuplicateResourceException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable("id") long userId, @RequestBody User user) {
+        if (user.getUserId() != userId) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User ID in path must match User ID in body");
+        }
+        try {
+            User updatedUser = userService.updateUser(user);
+            return ResponseEntity.ok(updatedUser);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable("id") long userId) {
+        try {
+            userService.deleteUser(userId);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        }
     }
 
 }
