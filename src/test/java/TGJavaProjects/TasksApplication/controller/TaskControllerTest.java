@@ -1,5 +1,7 @@
 package TGJavaProjects.TasksApplication.controller;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.model.User;
 import TGJavaProjects.TasksApplication.service.TaskService;
@@ -21,14 +23,17 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.CoreMatchers.is;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 @WebMvcTest(controllers = TaskController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -37,153 +42,236 @@ class TaskControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean // Мок в Spring-контексте
-    private TaskService service;
+    @MockitoBean
+    private TaskService taskService;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private Task task1;
+    private Task task2;
+    private static final long USER_ID_1 = 1L;
+    private static final long TASK_ID_1 = 10L;
+    private static final long TASK_ID_2 = 20L;
+    private static final long NON_EXISTENT_TASK_ID = 4L;
+    private static final long NON_EXISTENT_USER_ID = 3L;
+
 
     private Task task;
 
     @BeforeEach
     void setUp() {
-        task = new Task(1L, "test task",
-                LocalDateTime.now(), LocalDateTime.now(), true, 1L);
+        task1 = Task.builder()
+                .taskId(TASK_ID_1)
+                .userId(USER_ID_1)
+                .taskText("Test Task 1")
+                .creationDate(LocalDateTime.now().minusDays(1))
+                .isComplete(false)
+                .build();
+
+        task2 = Task.builder()
+                .taskId(TASK_ID_2)
+                .userId(USER_ID_1)
+                .taskText("Test Task 2")
+                .creationDate(LocalDateTime.now())
+                .isComplete(true)
+                .build();
     }
+
+
+    // getAllTasks
 
     @Test
     void getAllTasks_ReturnsListOfTasks() throws Exception {
-        when(service.getAllTasks()).thenReturn(Collections.singletonList(task));
+        List<Task> tasks = Arrays.asList(task1, task2);
+        when(taskService.findAllTasks()).thenReturn(tasks);
 
         mockMvc.perform(get("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(1));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].taskId", is((int) TASK_ID_1)))
+                .andExpect(jsonPath("$[1].taskId", is((int) TASK_ID_2)));
 
-        verify(service, times(1)).getAllTasks();
+        verify(taskService, times(1)).findAllTasks();
     }
 
     @Test
-    void getTaskById_ReturnsTask_WhenTaskExists() throws Exception {
-        String taskJson = objectMapper.writeValueAsString(task);
+    void getAllTasks_ReturnsEmptyList() throws Exception {
+        when(taskService.findAllTasks()).thenReturn(Collections.emptyList());
 
-        when(service.getTaskById(task.getTaskId())).thenReturn(Optional.of(task));
-
-        mockMvc.perform(get("/api/v1/tasks/" + task.getTaskId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(taskJson))
+        mockMvc.perform(get("/api/v1/tasks")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.taskText").value(task.getTaskText()))
-                .andExpect(jsonPath("$.dueDate")
-                        .value(Matchers.containsString(task.getDueDate().toString().substring(0, 23))))
-                .andExpect(jsonPath("$.creationDate")
-                        .value(Matchers.containsString(task.getCreationDate().toString().substring(0, 23))))
-                .andExpect(jsonPath("$.complete").value((boolean) task.isComplete()))
-                .andExpect(jsonPath("$.userId").value(task.getUserId()));
+                .andExpect(jsonPath("$", hasSize(0)));
 
-        verify(service, times(1)).getTaskById(task.getTaskId());
+        verify(taskService, times(1)).findAllTasks();
+    }
+
+    // getTaskById
+
+    @Test
+    void getTaskById_ReturnsTask_WhenExists() throws Exception {
+        when(taskService.findTaskById(TASK_ID_1)).thenReturn(task1);
+
+        mockMvc.perform(get("/api/v1/tasks/{id}", TASK_ID_1)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.taskId", is(task1.getTaskId().intValue())))
+                .andExpect(jsonPath("$.taskText", is(task1.getTaskText())))
+                .andExpect(jsonPath("$.userId", is(task1.getUserId().intValue())))
+                .andExpect(jsonPath("$.isComplete", is(task1.getIsComplete())));
+
+        verify(taskService, times(1)).findTaskById(TASK_ID_1);
     }
 
     @Test
-    void getTaskById_ReturnsIsNotFound_WhenTaskDoesNotExist() throws Exception {
-        when(service.getTaskById(task.getTaskId())).thenReturn(Optional.empty());
+    void getTaskById_ReturnsNotFound_WhenDoesNotExist() throws Exception {
+        when(taskService.findTaskById(NON_EXISTENT_TASK_ID))
+                .thenThrow(new ResourceNotFoundException("Task not found"));
 
-        mockMvc.perform(get("/api/v1/tasks/" + task.getTaskId())
+        mockMvc.perform(get("/api/v1/tasks/{id}", NON_EXISTENT_TASK_ID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(service, times(1)).getTaskById(task.getTaskId());
+        verify(taskService, times(1)).findTaskById(NON_EXISTENT_TASK_ID);
     }
+
+    // getTasksByUserId
 
     @Test
     void getTasksByUserId_ReturnsListOfTasks_WhenUserExists() throws Exception {
-        String taskJson = objectMapper.writeValueAsString(Collections.singletonList(task));
+        List<Task> tasks = Arrays.asList(task1, task2);
+        when(taskService.findTasksByUserId(USER_ID_1)).thenReturn(tasks);
 
-        when(service.getTasksByUserId(task.getUserId()))
-                .thenReturn(Optional.of(Collections.singletonList(task)));
-
-        mockMvc.perform(get("/api/v1/tasks/user/" + task.getUserId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(taskJson))
+        mockMvc.perform(get("/api/v1/tasks/user/{userId}", USER_ID_1)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.size()").value(1));
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].taskId", is((int) TASK_ID_1)))
+                .andExpect(jsonPath("$[1].taskId", is((int) TASK_ID_2)));
 
-        verify(service, times(1)).getTasksByUserId(task.getUserId());
+        verify(taskService, times(1)).findTasksByUserId(USER_ID_1);
     }
 
     @Test
-    void getTasksByUserId_ReturnsIsNotFound_WhenUserDoesNotExist() throws Exception {
-        when(service.getTasksByUserId(task.getUserId())).thenReturn(Optional.empty());
+    void getTasksByUserId_ReturnsEmptyList_WhenUserExistsButNoTasks() throws Exception {
+        when(taskService.findTasksByUserId(USER_ID_1)).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/v1/tasks/user/" + task.getUserId())
+        mockMvc.perform(get("/api/v1/tasks/user/{userId}", USER_ID_1)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        verify(taskService, times(1)).findTasksByUserId(USER_ID_1);
+    }
+
+
+    @Test
+    void getTasksByUserId_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
+        when(taskService.findTasksByUserId(NON_EXISTENT_USER_ID))
+                .thenThrow(new ResourceNotFoundException("User not found"));
+
+        mockMvc.perform(get("/api/v1/tasks/user/{userId}", NON_EXISTENT_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(service, times(1)).getTasksByUserId(task.getUserId());
+        verify(taskService, times(1)).findTasksByUserId(NON_EXISTENT_USER_ID);
     }
 
-    @Test
-    void addTask_ReturnsTask_WhenTaskIsValid() throws Exception {
-        String taskJson = objectMapper.writeValueAsString(task);
+    // addTask
 
-        when(service.addTask(any(Task.class))).thenReturn(Optional.of(task));
+    @Test
+    void addTask_ReturnsTask_WhenValid() throws Exception {
+        when(taskService.addTask(any(Task.class))).thenReturn(task1);
+        String taskJson = objectMapper.writeValueAsString(task1);
 
         mockMvc.perform(post("/api/v1/tasks")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(taskJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.taskText").value(task.getTaskText()))
-                .andExpect(jsonPath("$.dueDate")
-                        .value(Matchers.containsString(task.getDueDate().toString().substring(0, 23))))
-                .andExpect(jsonPath("$.creationDate")
-                        .value(Matchers.containsString(task.getCreationDate().toString().substring(0, 23))))
-                .andExpect(jsonPath("$.complete").value((boolean) task.isComplete()))
-                .andExpect(jsonPath("$.userId").value(task.getUserId()));
+                .andExpect(header().string("Location", "/api/v1/tasks/" + task1.getTaskId()))
+                .andExpect(jsonPath("$.taskId", is(task1.getTaskId().intValue())))
+                .andExpect(jsonPath("$.taskText", is(task1.getTaskText())));
 
-        verify(service, times(1)).addTask(any(Task.class));
+        verify(taskService, times(1)).addTask(any(Task.class));
     }
 
     @Test
-    void addTask_ReturnsIsBadRequest_WhenTaskIsNotValid() throws Exception {
-        when(service.addTask(any(Task.class))).thenReturn(Optional.empty());
+    void addTask_ReturnsBadRequest_WhenUserNotFound() throws Exception {
+        when(taskService.addTask(any(Task.class)))
+                .thenThrow(new ResourceNotFoundException("User not found"));
+        String taskJson = objectMapper.writeValueAsString(task1);
 
         mockMvc.perform(post("/api/v1/tasks")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verify(service, times(0)).addTask(any(Task.class));
-    }
-
-    @Test
-    void deleteTask_ReturnsTask_WhenTaskExists() throws Exception {
-        String taskJson = objectMapper.writeValueAsString(task);
-
-        when(service.deleteTask(task.getTaskId())).thenReturn(Optional.of(task));
-
-        mockMvc.perform(delete("/api/v1/tasks/" + task.getTaskId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(taskJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.taskText").value(task.getTaskText()))
-                .andExpect(jsonPath("$.dueDate")
-                        .value(Matchers.containsString(task.getDueDate().toString().substring(0, 23))))
-                .andExpect(jsonPath("$.creationDate")
-                        .value(Matchers.containsString(task.getCreationDate().toString().substring(0, 23))))
-                .andExpect(jsonPath("$.complete").value((boolean) task.isComplete()))
-                .andExpect(jsonPath("$.userId").value(task.getUserId()));
+                .andExpect(status().isBadRequest());
 
-        verify(service, times(1)).deleteTask(task.getTaskId());
+        verify(taskService, times(1)).addTask(any(Task.class));
     }
 
     @Test
-    void deleteTask_ReturnsIsBadRequest_WhenTaskDoesNotExists() throws Exception {
-        when(service.deleteTask(task.getTaskId())).thenReturn(Optional.empty());
+    void addTask_ReturnsConflict_WhenTaskIdExists() throws Exception {
+        when(taskService.addTask(any(Task.class)))
+                .thenThrow(new DuplicateResourceException("Task ID exists"));
+        String taskJson = objectMapper.writeValueAsString(task1);
 
-        mockMvc.perform(delete("/api/v1/tasks/" + task.getTaskId())
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post("/api/v1/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskJson))
+                .andExpect(status().isConflict());
+
+        verify(taskService, times(1)).addTask(any(Task.class));
+    }
+
+    @Test
+    void addTask_ReturnsBadRequest_WhenIllegalArgument() throws Exception {
+        when(taskService.addTask(any(Task.class)))
+                .thenThrow(new IllegalArgumentException("Invalid input"));
+        String taskJson = objectMapper.writeValueAsString(task1);
+
+        mockMvc.perform(post("/api/v1/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskJson))
                 .andExpect(status().isBadRequest());
 
-        verify(service, times(1)).deleteTask(task.getTaskId());
+        verify(taskService, times(1)).addTask(any(Task.class));
+    }
+
+    @Test
+    void addTask_ReturnsBadRequest_WhenInvalidJson() throws Exception {
+        String invalidJson = "{\"taskId\": 1, \"taskText\": \"Test\",";
+
+        mockMvc.perform(post("/api/v1/tasks")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJson))
+                .andExpect(status().isBadRequest());
+
+        verify(taskService, never()).addTask(any(Task.class));
+    }
+
+
+    // deleteTask
+
+    @Test
+    void deleteTask_ReturnsNoContent_WhenSuccessful() throws Exception {
+        doNothing().when(taskService).deleteTask(TASK_ID_1);
+
+        mockMvc.perform(delete("/api/v1/tasks/{id}", TASK_ID_1))
+                .andExpect(status().isNoContent());
+
+        verify(taskService, times(1)).deleteTask(TASK_ID_1);
+    }
+
+    @Test
+    void deleteTask_ReturnsNotFound_WhenTaskDoesNotExist() throws Exception {
+        doThrow(new ResourceNotFoundException("Task not found")).when(taskService).deleteTask(NON_EXISTENT_TASK_ID);
+
+        mockMvc.perform(delete("/api/v1/tasks/{id}", NON_EXISTENT_TASK_ID))
+                .andExpect(status().isNotFound());
+
+        verify(taskService, times(1)).deleteTask(NON_EXISTENT_TASK_ID);
     }
 
 }
