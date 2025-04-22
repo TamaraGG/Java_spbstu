@@ -1,6 +1,6 @@
 package TGJavaProjects.TasksApplication.repository;
 
-import TGJavaProjects.TasksApplication.model.Task;
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -18,10 +19,27 @@ class InMemoryUserDAOTest {
 
     private InMemoryUserDAO repository;
 
-    private static final User user1 = mock(User.class);
-    private static final User user2 = mock(User.class);
+    private static final User USER_1 = User.builder()
+            .userId(1L)
+            .firstName("Jane")
+            .lastName("Doe")
+            .email("jane@gmail.com")
+            .build();
 
-    private static final long userId = 1L;
+    private static final User USER_2 = User.builder()
+            .userId(2L)
+            .firstName("Jon")
+            .lastName("Smith")
+            .email("jjj@gmail.com")
+            .build();
+
+    private static final User USER_1_UPDATED = User.builder()
+            .userId(1L)
+            .firstName("Kate")
+            .lastName("Doe")
+            .email("kate@gmail.com")
+            .build();
+
 
 
     @BeforeEach
@@ -29,114 +47,164 @@ class InMemoryUserDAOTest {
         repository = new InMemoryUserDAO();
     }
 
+    // findAllUsers
+
     @Test
     void findAllUsers_ReturnsListOfUsers_WhenNotEmpty() {
-        repository.addUser(user1);
-        repository.addUser(user2);
+        repository.addUser(USER_1);
+        repository.addUser(USER_2);
 
         List<User> receivedUsers = repository.findAllUsers();
 
         assertNotNull(receivedUsers);
         assertEquals(2, receivedUsers.size());
+        assertTrue(receivedUsers.contains(USER_1));
+        assertTrue(receivedUsers.contains(USER_2));
     }
 
     @Test
-    void findAllUsers_ReturnsListOfUsers_WhenEmpty() {
+    void findAllUsers_ReturnsEmptyList_WhenEmpty() {
 
         List<User> receivedUsers = repository.findAllUsers();
 
         assertNotNull(receivedUsers);
-        assertEquals(0, receivedUsers.size());
+        assertTrue(receivedUsers.isEmpty());
+
     }
 
-    @Test
-    void addUser_ReturnsAddedUser_WhenNotNull() {
-        when(user1.getUserId()).thenReturn(userId);
+    // addUser
 
-        User addedUser = repository.addUser(user1);
+    @Test
+    void addUser_ReturnsAddedUser_WhenValidAndUnique() {
+
+        User addedUser = repository.addUser(USER_1);
 
         assertNotNull(addedUser);
-        assertEquals(user1, addedUser);
+        assertEquals(USER_1, addedUser);
+        assertEquals(1, repository.findAllUsers().size());
+        assertTrue(repository.existsById(USER_1.getUserId()));
+        assertEquals(Optional.of(USER_1), repository.findUserById(USER_1.getUserId()));
     }
 
     @Test
-    void addUser_ReturnsAddedUser_WhenNull() {
-        repository.addUser(user1);
+    void addUser_ThrowsDuplicateResourceException_WhenIdExists() {
+        repository.addUser(USER_1);
 
-        User addedUser = repository.addUser(null);
+        DuplicateResourceException exception = assertThrows(
+                DuplicateResourceException.class,
+                () -> repository.addUser(USER_1_UPDATED)
+        );
 
-        assertNull(addedUser);
+        assertTrue(exception.getMessage().contains("user id 1 already exists"));
         assertEquals(1, repository.findAllUsers().size());
     }
 
     @Test
-    void findUserById_ReturnsUser_WhenExists() {
-        when(user1.getUserId()).thenReturn(userId);
-        repository.addUser(user1);
+    void addUser_ThrowsIllegalArgumentException_WhenUserIsNull() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> repository.addUser(null)
+        );
+        assertEquals("user cannot be null", exception.getMessage());
+        assertTrue(repository.findAllUsers().isEmpty());
+    }
 
-        User foundUser = repository.findUserById(userId);
+    // findUserById
 
-        assertNotNull(foundUser);
-        assertEquals(user1, foundUser);
+    @Test
+    void findUserById_ReturnsOptionalWithUser_WhenExists() {
+        repository.addUser(USER_1);
+
+        Optional<User> foundUserOpt = repository.findUserById(USER_1.getUserId());
+
+        assertTrue(foundUserOpt.isPresent());
+        assertEquals(USER_1, foundUserOpt.get());
     }
 
     @Test
-    void findUserById_ReturnsUser_WhenDoesNotExist() {
-        when(user1.getUserId()).thenReturn(userId);
-        repository.addUser(user1);
+    void findUserById_ReturnsEmptyOptional_WhenDoesNotExist() {
+        repository.addUser(USER_1);
 
-        User foundUser = repository.findUserById(userId + 1);
+        Optional<User> foundUserOpt = repository.findUserById(USER_2.getUserId());
 
-        assertNull(foundUser);
+        assertTrue(foundUserOpt.isEmpty());
     }
 
+    // updateUser
+
     @Test
-    void updateUser_ReturnsUpdatedUser_WhenExists() {
-        when(user1.getUserId()).thenReturn(userId);
-        when(user2.getUserId()).thenReturn(userId);
-        repository.addUser(user1);
+    void updateUser_ReturnsOptionalWithUpdatedUser_WhenExists() {
+        repository.addUser(USER_1);
 
-        User updatedUser = repository.updateUser(user2);
+        Optional<User> updatedUserOpt = repository.updateUser(USER_1_UPDATED);
 
-        assertNotNull(updatedUser);
-        assertEquals(user2, updatedUser);
+        assertTrue(updatedUserOpt.isPresent());
+        assertEquals(USER_1_UPDATED, updatedUserOpt.get());
         assertEquals(1, repository.findAllUsers().size());
+
+        Optional<User> storedUserOpt = repository.findUserById(USER_1.getUserId());
+        assertTrue(storedUserOpt.isPresent());
+        assertEquals(USER_1_UPDATED, storedUserOpt.get());
     }
 
     @Test
-    void updateUser_ReturnsUpdatedUser_WhenDoesNotExist() {
-        when(user1.getUserId()).thenReturn(userId);
-        when(user2.getUserId()).thenReturn(userId + 1);
-        repository.addUser(user1);
+    void updateUser_ReturnsEmptyOptional_WhenDoesNotExist() {
+        repository.addUser(USER_1);
 
-        User updatedUser = repository.updateUser(user2);
+        Optional<User> updatedUserOpt = repository.updateUser(USER_2);
 
-        assertNull(updatedUser);
+        assertTrue(updatedUserOpt.isEmpty());
         assertEquals(1, repository.findAllUsers().size());
+
+        Optional<User> storedUserOpt = repository.findUserById(USER_1.getUserId());
+        assertTrue(storedUserOpt.isPresent());
+        assertEquals(USER_1, storedUserOpt.get());
+    }
+
+    // deleteUser
+
+    @Test
+    void deleteUser_ReturnsTrueAndRemovesUser_WhenExists() {
+        repository.addUser(USER_1);
+        repository.addUser(USER_2);
+        assertEquals(2, repository.findAllUsers().size());
+
+        boolean result = repository.deleteUser(USER_1.getUserId());
+
+        assertTrue(result);
+        assertEquals(1, repository.findAllUsers().size());
+        assertFalse(repository.existsById(USER_1.getUserId()));
+        assertTrue(repository.existsById(USER_2.getUserId()));
     }
 
     @Test
-    void deleteUser_ReturnsDeletedUser_WhenExists() {
-        when(user1.getUserId()).thenReturn(userId);
-        when(user2.getUserId()).thenReturn(userId + 1);
-        repository.addUser(user1);
-        repository.addUser(user2);
-
-        User deletedUser = repository.deleteUser(userId);
-
-        assertNotNull(deletedUser);
-        assertEquals(user1, deletedUser);
+    void deleteUser_ReturnsFalse_WhenDoesNotExist() {
+        repository.addUser(USER_1);
         assertEquals(1, repository.findAllUsers().size());
+
+        boolean result = repository.deleteUser(USER_2.getUserId());
+
+        assertFalse(result);
+        assertEquals(1, repository.findAllUsers().size());
+        assertTrue(repository.existsById(USER_1.getUserId()));
+    }
+
+    // existsById
+
+    @Test
+    void existsById_ReturnsTrue_WhenExists() {
+        repository.addUser(USER_1);
+        assertTrue(repository.existsById(USER_1.getUserId()));
     }
 
     @Test
-    void deleteUser_ReturnsDeletedUser_WhenDoesNotExist() {
-        when(user1.getUserId()).thenReturn(userId);
-        repository.addUser(user1);
+    void existsById_ReturnsFalse_WhenDoesNotExist() {
+        repository.addUser(USER_1);
+        assertFalse(repository.existsById(USER_2.getUserId()));
+    }
 
-        User deletedUser = repository.deleteUser(userId + 1);
-
-        assertNull(deletedUser);
-        assertEquals(1, repository.findAllUsers().size());
+    @Test
+    void existsById_ReturnsFalse_WhenEmpty() {
+        assertFalse(repository.existsById(USER_1.getUserId()));
     }
 }
