@@ -19,7 +19,8 @@ public class InMemoryUserDAO {
         return users;
     }
 
-    public User addUser(User user) {
+    public User addUser(User user)
+            throws IllegalArgumentException, DuplicateResourceException {
 
         if (user == null) {
             throw new IllegalArgumentException("user cannot be null");
