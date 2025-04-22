@@ -22,11 +22,11 @@ public class TaskController {
 
     @GetMapping
     public List<Task> getAllTasks () {
-        return taskService.getAllTasks();
+        return taskService.findAllTasks();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Task> findTaskById(@PathVariable("id") long taskId)
+    public ResponseEntity<Task> getTaskById(@PathVariable("id") long taskId)
         throws ResourceNotFoundException {
 
         try {
@@ -38,7 +38,7 @@ public class TaskController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Task>> findTasksByUserId(@PathVariable long userId)
+    public ResponseEntity<List<Task>> getTasksByUserId(@PathVariable long userId)
         throws ResourceNotFoundException {
         try {
             List<Task> tasks = taskService.findTasksByUserId(userId);
