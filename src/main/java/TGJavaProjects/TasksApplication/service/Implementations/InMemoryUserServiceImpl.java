@@ -1,9 +1,11 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.repository.InMemoryUserDAO;
 import TGJavaProjects.TasksApplication.model.User;
 import TGJavaProjects.TasksApplication.service.UserService;
 import lombok.AllArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,26 +23,57 @@ public class InMemoryUserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<User> addUser(User user) {
-        if (!userDAO.existsById(user.getUserId())) {
-            return Optional.ofNullable(userDAO.addUser(user));
+    public User addUser(User user) {
+
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null");
         }
-        return  Optional.empty();
+//
+//        if (userDAO.existsById(user.getUserId())) {
+//            return Optional.ofNullable(userDAO.addUser(user));
+//        }
+
+        return userDAO.addUser(user);
     }
 
     @Override
-    public Optional<User> findUserById(long userId) {
-        return Optional.ofNullable(userDAO.findUserById(userId));
+    public User findUserById(long userId) {
+        return userDAO.findUserById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "user " + userId + " not found"));
     }
 
     @Override
-    public Optional<User> updateUser(User user) {
-        return Optional.ofNullable(userDAO.updateUser(user));
+    public User updateUser(User user) {
+
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null");
+        }
+
+        if (!userDAO.existsById(user.getUserId())) {
+            throw new ResourceNotFoundException(
+                    "update error. user with id " + user.getUserId() +
+                    " not found"
+            );
+        }
+
+        return userDAO.updateUser(user)
+                .orElseThrow(() -> new RuntimeException(
+                        "update failed for user " + user.getUserId()));
     }
 
     @Override
-    public Optional<User> deleteUser(long userId) {
-        return Optional.ofNullable(userDAO.deleteUser(userId));
+    public void deleteUser(long userId) {
+        if (!userDAO.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    "delete error. user with id " + userId +
+                            " not found");
+        }
+
+        boolean isDeleted = userDAO.deleteUser(userId);
+        if (! isDeleted) {
+            throw new RuntimeException("delete failed for user " + userId);
+        }
     }
 
 }

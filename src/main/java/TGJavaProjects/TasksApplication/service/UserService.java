@@ -10,8 +10,8 @@ import java.util.Optional;
 public interface UserService {
 
     public List<User> findAllUsers();
-    public Optional<User> addUser(User user);
-    public Optional<User> findUserById(long userId);
-    public Optional<User> updateUser (User user);
-    public Optional<User> deleteUser (long userId);
+    public User addUser(User user);
+    public User findUserById(long userId);
+    public User updateUser (User user);
+    public void deleteUser (long userId);
 }
