@@ -78,5 +78,5 @@ public class InMemoryTaskServiceImpl implements TaskService {
                     "delete failed for task " + taskId);
         }
     }
-    }
+
 }
