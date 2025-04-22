@@ -28,7 +28,8 @@ public class InMemoryTaskDAO {
                 .toList();
     }
 
-    public Task addTask(Task task) {
+    public Task addTask(Task task)
+            throws IllegalArgumentException, DuplicateResourceException {
         if (task == null) {
             throw new IllegalArgumentException(
                     "task cannot be null");
