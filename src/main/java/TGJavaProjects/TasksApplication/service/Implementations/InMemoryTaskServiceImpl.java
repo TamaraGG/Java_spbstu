@@ -1,7 +1,10 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.InMemoryTaskDAO;
+import TGJavaProjects.TasksApplication.repository.InMemoryUserDAO;
 import TGJavaProjects.TasksApplication.service.TaskService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,9 +16,10 @@ import java.util.Optional;
 @AllArgsConstructor
 public class InMemoryTaskServiceImpl implements TaskService {
 
-    private final InMemoryUserServiceImpl userService;
+    //private final InMemoryUserServiceImpl userService;
 
     private final InMemoryTaskDAO taskDAO;
+    private final InMemoryUserDAO userDAO;
 
     @Override
     public List<Task> getAllTasks() {
@@ -23,30 +27,53 @@ public class InMemoryTaskServiceImpl implements TaskService {
     }
 
     @Override
-    public Optional<Task> getTaskById(long taskId) {
-        return Optional.ofNullable(taskDAO.getTaskById(taskId));
+    public Task findTaskById(long taskId) {
+        return taskDAO.findTaskById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "task " + taskId + " not found"));
     }
 
     @Override
-    public Optional<List<Task>> getTasksByUserId(long userId) {
-        if (userService.findUserById(userId).isPresent()) {
-            return Optional.of(taskDAO.getTasksByUserId(userId));
+    public List<Task> findTasksByUserId(long userId) {
+        if (!userDAO.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    "cannot find tasks. user " + userId + " not found"
+            );
         }
-        return Optional.empty();
+        return taskDAO.findTasksByUserId(userId);
     }
 
     @Override
-    public Optional<Task> addTask(Task task) {
-        if (userService.findUserById(task.getUserId()).isPresent() && !taskDAO.existsById(task.getTaskId())) {
-            return Optional.ofNullable(taskDAO.addTask(task));
+    public Task addTask(Task task) {
+
+        if (task == null) {
+            throw new IllegalArgumentException("task cannot be null");
         }
-        else {
-            return Optional.empty();
+        if (!userDAO.existsById(task.getUserId())) {
+            throw new ResourceNotFoundException(
+                    "cannot find task. user " + task.getUserId() +
+                    "not found"
+            );
+        }
+        try {
+            return taskDAO.addTask(task);
+        } catch (DuplicateResourceException | IllegalArgumentException e) {
+            throw e;
         }
     }
 
     @Override
-    public Optional<Task> deleteTask(long taskId) {
-        return Optional.ofNullable(taskDAO.deleteTask(taskId));
+    public void deleteTask(long taskId) {
+        if (!taskDAO.existsById(taskId)) {
+            throw new ResourceNotFoundException(
+                    "delete error. task with id " + taskId +
+                            " not found");
+        }
+        boolean isDeleted = taskDAO.deleteTask(taskId);
+        if (! isDeleted) {
+            throw new RuntimeException(
+                    "delete failed for task " + taskId);
+        }
+    }
     }
 }
