@@ -4,13 +4,14 @@ import TGJavaProjects.TasksApplication.model.Notification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public interface NotificationService {
 
     public List<Notification> findAllNotifications();
-    public Optional<List<Notification>> findUserNotifications(long userId);
-    public Optional<List<Notification>> findTaskNotifications(long taskId);
-
+    // List<Notification> findUserNotifications(long userId);
+    public List<Notification> findNotificationsByTaskId(long taskId);
+    public Notification findNotificationById(long notificationId);
+    public Notification addNotification(Notification notification);
+    public void deleteNotification(long notificationId);
 }
