@@ -1,15 +1,16 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
-import TGJavaProjects.TasksApplication.model.Task;
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.User;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.UserService;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -24,30 +25,89 @@ public class UserServiceH2Impl implements UserService {
     }
 
     @Override
-    public Optional<User> addUser(User user) {
-        if (userRepository.findById(user.getUserId()).isEmpty()) {
-            return Optional.of(userRepository.save(user));
+    @Transactional
+    public User addUser(User user)
+            throws IllegalArgumentException, DuplicateResourceException {
+
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null");
         }
-        return Optional.empty();
-    }
 
-    @Override
-    public Optional<User> findUserById(long userId) {
-        return userRepository.findById(userId);
-    }
-
-    @Override
-    public Optional<User> updateUser(User user) {
-        if (userRepository.findById(user.getUserId()).isEmpty()) {
-            return Optional.empty();
+        if (user.getUserId() != null) {
+            throw new IllegalArgumentException("user id must be null to create new user");
         }
-        return Optional.of(userRepository.save(user));
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("user email cannot be blank");
+        }
+        if (user.getFirstName() == null || user.getFirstName().isBlank()){
+            throw new IllegalArgumentException("user first name cannot be blank");
+        }
+        if (user.getLastName() == null || user.getLastName().isBlank()){
+            throw new IllegalArgumentException("user last name cannot be blank");
+        }
+
+
+        try {
+            return userRepository.save(user);
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     @Override
-    public Optional<User> deleteUser(long userId) {
-        Optional<User> deletedUser = userRepository.findById(userId);
+    public User findUserById(long userId)
+            throws ResourceNotFoundException {
+
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "user with id " + userId + " not found"));
+    }
+
+    @Override
+    public User updateUser(User user)
+            throws IllegalArgumentException, ResourceNotFoundException, DuplicateResourceException {
+
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null");
+        }
+        if (user.getUserId() == null) {
+            throw new IllegalArgumentException("user id cannot be null to update");
+        }
+
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new IllegalArgumentException("user email cannot be blank");
+        }
+        if (user.getFirstName() == null || user.getFirstName().isBlank()){
+            throw new IllegalArgumentException("user first name cannot be blank");
+        }
+        if (user.getLastName() == null || user.getLastName().isBlank()){
+            throw new IllegalArgumentException("user last name cannot be blank");
+        }
+
+        if (!userRepository.existsById(user.getUserId())) {
+            throw new ResourceNotFoundException(
+                    "update error. user with id " + user.getUserId() + " not found"
+            );
+        }
+
+        try {
+            return userRepository.save(user);
+        } catch (Exception e) {
+            throw e;
+        }
+
+    }
+
+    @Override
+    public void deleteUser(long userId)
+            throws ResourceNotFoundException {
+
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    "delete error. user with id " + userId + " not found");
+        }
+
         userRepository.deleteById(userId);
-        return deletedUser;
+
     }
 }
