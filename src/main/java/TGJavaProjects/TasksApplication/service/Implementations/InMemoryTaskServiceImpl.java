@@ -9,6 +9,7 @@ import TGJavaProjects.TasksApplication.service.TaskService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,12 +52,31 @@ public class InMemoryTaskServiceImpl implements TaskService {
         if (task == null) {
             throw new IllegalArgumentException("task cannot be null");
         }
+
+        if (task.getTaskId() == null) {
+            throw new IllegalArgumentException("task id cannot be null");
+        }
+        if (task.getUserId() == null) {
+            throw new IllegalArgumentException("user id cannot be null for task");
+        }
+        if (task.getTaskText() == null || task.getTaskText().isBlank()) {
+            throw new IllegalArgumentException("task text cannot be null");
+        }
+
         if (!userDAO.existsById(task.getUserId())) {
             throw new ResourceNotFoundException(
                     "cannot find task. user " + task.getUserId() +
                     "not found"
             );
         }
+
+        if (task.getCreationDate() == null) {
+            task.setCreationDate(LocalDateTime.now());
+        }
+        if (task.getIsComplete() == null) {
+            task.setIsComplete(false);
+        }
+
         try {
             return taskDAO.addTask(task);
         } catch (DuplicateResourceException | IllegalArgumentException e) {

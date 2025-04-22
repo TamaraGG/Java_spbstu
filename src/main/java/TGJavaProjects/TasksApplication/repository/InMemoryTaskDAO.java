@@ -30,7 +30,7 @@ public class InMemoryTaskDAO {
 
     public Task addTask(Task task)
             throws IllegalArgumentException, DuplicateResourceException {
-        if (task == null) {
+        if (task == null || task.getTaskId() == null) {
             throw new IllegalArgumentException(
                     "task cannot be null");
         }
