@@ -11,14 +11,14 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 public class Notification {
+
+    @NonNull
+    private Long notificationId;
+
     @NonNull
     private String text;
 
-    @NonNull
-    private long userId;
-
     private LocalDateTime date;
 
-    private long TaskId;
-
+    private Long TaskId;
 }

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class Task {
 
     @NonNull
-    private long taskId;
+    private Long taskId;
 
     @NonNull
     private String taskText;
@@ -24,9 +24,9 @@ public class Task {
     private LocalDateTime creationDate;
 
     @NonNull
-    private boolean isComplete;
+    private Boolean isComplete;
 
     @NonNull
-    private long userId;
+    private Long userId;
 
 }
