@@ -22,7 +22,7 @@ public class InMemoryTaskDAO {
                 .findFirst();
     }
 
-    public List<Task> getTasksByUserId(Long userId) {
+    public List<Task> findTasksByUserId(Long userId) {
         return tasks.stream()
                 .filter(task -> task.getUserId().equals(userId))
                 .toList();
