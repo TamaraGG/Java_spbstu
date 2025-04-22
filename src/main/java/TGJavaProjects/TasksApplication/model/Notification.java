@@ -22,5 +22,5 @@ public class Notification {
     private LocalDateTime date;
 
     @NonNull
-    private Long TaskId;
+    private Long taskId;
 }
