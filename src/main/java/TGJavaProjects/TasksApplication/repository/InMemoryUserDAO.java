@@ -5,6 +5,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 @Repository
@@ -17,41 +19,44 @@ public class InMemoryUserDAO {
     }
 
     public User addUser(User user) {
-        if (user != null && !existsById(user.getUserId())) {
-            users.add(user);
+
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null");
         }
+        if (existsById(user.getUserId())) {
+            throw new DuplicateResouceExeption(
+                    "user id " + user.getUserId() + " already exists."
+            );
+        }
+        users.add(user);
         return user;
     }
 
-    public User findUserById(long userId) {
+    public Optional<User> findUserById(Long userId) {
         return users.stream()
-                .filter(user -> user.getUserId() == userId)
-                .findFirst()
-                .orElse(null);
+                .filter(user -> user.getUserId().equals(userId))
+                .findFirst();
     }
 
-    public User updateUser(User user) {
+    public Optional<User> updateUser(User user) {
         var userIndex = IntStream.range(0, users.size())
-                .filter(index-> users.get(index).getUserId() == user.getUserId())
+                .filter(index-> users.get(index).getUserId().equals(user.getUserId()))
                 .findFirst()
                 .orElse(-1);
         if (userIndex > -1) {
             users.set(userIndex, user);
-            return user;
+            return Optional.of(user);
         }
-        return null;
+        return Optional.empty();
     }
 
-    public User deleteUser(long userId) {
-        var user = findUserById(userId);
-        if (user != null) {
-            users.remove(user);
-            return user;
-        }
-        return null;
+
+    public Boolean deleteUser(long userId) {
+        return users.removeIf(u -> u.getUserId() == userId);
     }
 
-    public boolean existsById(long userId) {
-        return findUserById(userId) != null;
+
+    public boolean existsById(Long userId) {
+        return users.stream().anyMatch(u -> u.getUserId().equals(userId));
     }
 }
