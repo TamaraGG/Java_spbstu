@@ -28,7 +28,9 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable("id") long userId) {
+    public ResponseEntity<User> getUserById(@PathVariable("id") long userId)
+        throws ResourceNotFoundException {
+
         try {
             User user = userService.findUserById(userId);
             return ResponseEntity.ok(user);
@@ -39,7 +41,9 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> addUser(@RequestBody User user) {
+    public ResponseEntity<User> addUser(@RequestBody User user)
+        throws DuplicateResourceException, ResourceNotFoundException {
+
         try {
             User createdUser = userService.addUser(user);
             return ResponseEntity
@@ -54,9 +58,12 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable("id") long userId, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable("id") long userId, @RequestBody User user)
+        throws ResourceNotFoundException, ResponseStatusException {
+
         if (user.getUserId() != userId) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User ID in path must match User ID in body");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "User ID in path must match User ID in body");
         }
         try {
             User updatedUser = userService.updateUser(user);
@@ -69,7 +76,9 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable("id") long userId) {
+    public ResponseEntity<Void> deleteUser(@PathVariable("id") long userId)
+        throws ResourceNotFoundException {
+
         try {
             userService.deleteUser(userId);
             return ResponseEntity.noContent().build();
