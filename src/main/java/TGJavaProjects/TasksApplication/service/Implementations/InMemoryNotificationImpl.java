@@ -27,13 +27,10 @@ public class InMemoryNotificationImpl implements NotificationService {
         return notificationDAO.findAllNotifications();
     }
 
-//    @Override
-//    public List<Notification> findUserNotifications(long userId) {
-//        if (userService.findUserById(userId).isPresent()) {
-//            return Optional.of(notificationDAO.getUserNotifications(userId));
-//        }
-//        return Optional.empty();
-//    }
+    @Override
+    public List<Notification> findNotificationsByUserId(long userId) {
+        return List.of();
+    }
 
     @Override
     public List<Notification> findNotificationsByTaskId(long taskId)
