@@ -14,7 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.annotation.Profile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +28,7 @@ import static org.mockito.Mockito.*;
 class TaskServiceH2ImplTest {
 
     @InjectMocks
-    private TaskServiceH2Impl taskService;
+    private JpaTaskServiceImpl taskService;
 
     @Mock
     private TaskRepository taskRepository;
