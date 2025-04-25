@@ -65,5 +65,6 @@ public class Task {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     @JsonManagedReference("task-notifications")
+    @Builder.Default
     private List<Notification> notifications = new ArrayList<>();
 }
