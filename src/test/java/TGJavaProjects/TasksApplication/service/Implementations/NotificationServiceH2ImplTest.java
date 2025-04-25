@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 class NotificationServiceH2ImplTest {
 
     @InjectMocks
-    private NotificationServiceH2Impl notificationService;
+    private JpaNotificationServiceImpl notificationService;
 
     @Mock
     private NotificationRepository notificationRepository;
