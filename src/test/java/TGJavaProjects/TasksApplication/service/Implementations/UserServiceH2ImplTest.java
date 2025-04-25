@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 class UserServiceH2ImplTest {
 
     @InjectMocks
-    private UserServiceH2Impl userService;
+    private JpaUserServiceImpl userService;
 
     @Mock
     private UserRepository userRepository;
