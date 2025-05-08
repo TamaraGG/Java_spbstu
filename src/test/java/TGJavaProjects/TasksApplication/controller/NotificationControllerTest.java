@@ -3,6 +3,7 @@ package TGJavaProjects.TasksApplication.controller;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
@@ -30,7 +31,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.hamcrest.CoreMatchers.is;
 
 @WebMvcTest(controllers = NotificationController.class)
-@AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
 class NotificationControllerTest {
 
@@ -45,138 +45,143 @@ class NotificationControllerTest {
 
     private Notification notification1;
     private Notification notification2;
-    private static final long TASK_ID_1 = 1L;
-    private static final long NOTIFICATION_ID_1 = 10L;
-    private static final long NOTIFICATION_ID_2 = 33L;
-    private static final long NON_EXISTENT_TASK_ID = 14L;
+    private Notification notification1Read;
+
     private static final long USER_ID_1 = 1L;
-    private static final long NON_EXISTENT_USER_ID = 88L;
+    private static final long NOTIFICATION_ID_1 = 10L;
+    private static final long NOTIFICATION_ID_2 = 20L;
+    private static final long TASK_ID_FOR_NOTIFICATION_1 = 100L;
+    private static final long TASK_ID_FOR_NOTIFICATION_2 = 101L;
+    private static final long NON_EXISTENT_USER_ID = 99L;
+    private static final long NON_EXISTENT_NOTIFICATION_ID = 999L;
+    private static final LocalDateTime NOW = LocalDateTime.now();
 
     @BeforeEach
     void setUp() {
         notification1 = Notification.builder()
                 .notificationId(NOTIFICATION_ID_1)
-                .taskId(TASK_ID_1)
-                .text("Notification 1 Text")
-                .date(LocalDateTime.now().minusHours(1))
+                .userId(USER_ID_1)
+                .taskId(TASK_ID_FOR_NOTIFICATION_1)
+                .text("Notification 1 text")
+                .date(NOW.minusHours(1))
+                .isRead(false)
                 .build();
 
         notification2 = Notification.builder()
                 .notificationId(NOTIFICATION_ID_2)
-                .taskId(TASK_ID_1)
-                .text("Notification 2 Text")
-                .date(LocalDateTime.now())
+                .userId(USER_ID_1)
+                .taskId(TASK_ID_FOR_NOTIFICATION_2) // Добавлено
+                .text("Notification 2 text")
+                .date(NOW)
+                .isRead(false) // Изменил для теста pending
+                .build();
+
+        notification1Read = Notification.builder()
+                .notificationId(NOTIFICATION_ID_1)
+                .userId(USER_ID_1)
+                .taskId(TASK_ID_FOR_NOTIFICATION_1)
+                .text("Notification 1 text")
+                .date(NOW.minusHours(1))
+                .isRead(true)
                 .build();
     }
 
-    // getAllNotifications
+    // getAllUserNotifications
 
     @Test
-    void getAllNotifications_ReturnsListOfNotifications() throws Exception {
+    void getAllUserNotifications_ReturnsListOfNotifications_WhenUserExists() throws Exception {
         List<Notification> notifications = Arrays.asList(notification1, notification2);
-        when(notificationService.findAllNotifications()).thenReturn(notifications);
+        when(notificationService.getAllNotificationsByUserId(USER_ID_1)).thenReturn(notifications);
 
-        mockMvc.perform(get("/api/v1/notifications")
+        mockMvc.perform(get("/api/v1/users/{userId}/notifications", USER_ID_1)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].notificationId", is((int) NOTIFICATION_ID_1)))
                 .andExpect(jsonPath("$[1].notificationId", is((int) NOTIFICATION_ID_2)));
 
-        verify(notificationService, times(1)).findAllNotifications();
+        verify(notificationService, times(1)).getAllNotificationsByUserId(USER_ID_1);
     }
 
     @Test
-    void getAllNotifications_ReturnsEmptyList() throws Exception {
-        when(notificationService.findAllNotifications()).thenReturn(Collections.emptyList());
+    void getAllUserNotifications_ReturnsEmptyList_WhenUserHasNoNotifications() throws Exception {
+        when(notificationService.getAllNotificationsByUserId(USER_ID_1)).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/v1/notifications")
+        mockMvc.perform(get("/api/v1/users/{userId}/notifications", USER_ID_1)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
-
-        verify(notificationService, times(1)).findAllNotifications();
-    }
-
-    // getUserNotifications
-
-    @Test
-    void getUserNotifications_ReturnsListOfNotifications() throws Exception {
-        List<Notification> userNotifications = List.of(notification1);
-        when(notificationService.findNotificationsByUserId(USER_ID_1)).thenReturn(userNotifications);
-
-        mockMvc.perform(get("/api/v1/notifications/user/{userId}", USER_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].notificationId", is((int) NOTIFICATION_ID_1)));
-
-        verify(notificationService, times(1)).findNotificationsByUserId(USER_ID_1);
+        verify(notificationService, times(1)).getAllNotificationsByUserId(USER_ID_1);
     }
 
     @Test
-    void getUserNotifications_ReturnsEmptyList_WhenUserHasNoNotifications() throws Exception {
-        when(notificationService.findNotificationsByUserId(USER_ID_1)).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/api/v1/notifications/user/{userId}", USER_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
-
-        verify(notificationService, times(1)).findNotificationsByUserId(USER_ID_1);
-    }
-
-    @Test
-    void getUserNotifications_ReturnsNotFound_WhenServiceThrowsNotFound() throws Exception {
-        when(notificationService.findNotificationsByUserId(NON_EXISTENT_USER_ID))
+    void getAllUserNotifications_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
+        when(notificationService.getAllNotificationsByUserId(NON_EXISTENT_USER_ID))
                 .thenThrow(new ResourceNotFoundException("User not found"));
 
-        mockMvc.perform(get("/api/v1/notifications/user/{userId}", NON_EXISTENT_USER_ID)
+        mockMvc.perform(get("/api/v1/users/{userId}/notifications", NON_EXISTENT_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-
-        verify(notificationService, times(1)).findNotificationsByUserId(NON_EXISTENT_USER_ID);
+        verify(notificationService, times(1)).getAllNotificationsByUserId(NON_EXISTENT_USER_ID);
     }
 
-    // getTaskNotifications
+    // getPendingUserNotifications
 
     @Test
-    void getTaskNotifications_ReturnsListOfNotifications_WhenTaskExists() throws Exception {
-        List<Notification> taskNotifications = List.of(notification1);
-        when(notificationService.findNotificationsByTaskId(TASK_ID_1)).thenReturn(taskNotifications);
+    void getPendingUserNotifications_ReturnsListOfPendingNotifications() throws Exception {
+        List<Notification> pendingNotifications = Arrays.asList(notification1, notification2);
+        when(notificationService.getPendingNotificationsByUserId(USER_ID_1)).thenReturn(pendingNotifications);
 
-        mockMvc.perform(get("/api/v1/notifications/task/{taskId}", TASK_ID_1)
+        mockMvc.perform(get("/api/v1/users/{userId}/notifications/pending", USER_ID_1)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].notificationId", is((int) NOTIFICATION_ID_1)))
-                .andExpect(jsonPath("$[0].taskId", is((int) TASK_ID_1)));
-
-        verify(notificationService, times(1)).findNotificationsByTaskId(TASK_ID_1);
+                .andExpect(jsonPath("$[0].isRead", is(false)))
+                .andExpect(jsonPath("$[1].notificationId", is((int) NOTIFICATION_ID_2)))
+                .andExpect(jsonPath("$[1].isRead", is(false)));
+        verify(notificationService, times(1)).getPendingNotificationsByUserId(USER_ID_1);
     }
 
     @Test
-    void getTaskNotifications_ReturnsEmptyList_WhenTaskHasNoNotifications() throws Exception {
-        when(notificationService.findNotificationsByTaskId(TASK_ID_1)).thenReturn(Collections.emptyList());
+    void getPendingUserNotifications_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
+        when(notificationService.getPendingNotificationsByUserId(NON_EXISTENT_USER_ID))
+                .thenThrow(new ResourceNotFoundException("User not found"));
 
-        mockMvc.perform(get("/api/v1/notifications/task/{taskId}", TASK_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
-
-        verify(notificationService, times(1)).findNotificationsByTaskId(TASK_ID_1);
-    }
-
-    @Test
-    void getTaskNotifications_ReturnsNotFound_WhenTaskDoesNotExist() throws Exception {
-        when(notificationService.findNotificationsByTaskId(NON_EXISTENT_TASK_ID))
-                .thenThrow(new ResourceNotFoundException("Task not found"));
-
-        mockMvc.perform(get("/api/v1/notifications/task/{taskId}", NON_EXISTENT_TASK_ID)
+        mockMvc.perform(get("/api/v1/users/{userId}/notifications/pending", NON_EXISTENT_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-
-        verify(notificationService, times(1)).findNotificationsByTaskId(NON_EXISTENT_TASK_ID);
+        verify(notificationService, times(1)).getPendingNotificationsByUserId(NON_EXISTENT_USER_ID);
     }
 
+    // markNotificationAsRead
+
+    @Test
+    void markNotificationAsRead_ReturnsNoContent_WhenSuccessful() throws Exception {
+        doNothing().when(notificationService).markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1);
+
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read", USER_ID_1, NOTIFICATION_ID_1))
+                .andExpect(status().isNoContent());
+        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1);
+    }
+
+    @Test
+    void markNotificationAsRead_ReturnsNotFound_WhenNotificationDoesNotExist() throws Exception {
+        doThrow(new ResourceNotFoundException("Notification not found"))
+                .when(notificationService).markNotificationAsRead(USER_ID_1, NON_EXISTENT_NOTIFICATION_ID);
+
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read", USER_ID_1, NON_EXISTENT_NOTIFICATION_ID))
+                .andExpect(status().isNotFound());
+        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1, NON_EXISTENT_NOTIFICATION_ID);
+    }
+
+    @Test
+    void markNotificationAsRead_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
+        doThrow(new ResourceNotFoundException("User not found"))
+                .when(notificationService).markNotificationAsRead(NON_EXISTENT_USER_ID, NOTIFICATION_ID_1);
+
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read", NON_EXISTENT_USER_ID, NOTIFICATION_ID_1))
+                .andExpect(status().isNotFound());
+        verify(notificationService, times(1)).markNotificationAsRead(NON_EXISTENT_USER_ID, NOTIFICATION_ID_1);
+    }
 }

@@ -3,6 +3,7 @@ package TGJavaProjects.TasksApplication.controller;
 
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -23,8 +24,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(controllers = UserController.class)
-@AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
 class UserControllerTest {
 
@@ -50,224 +52,145 @@ class UserControllerTest {
     private ObjectMapper objectMapper;
 
     private User user1;
-    private User user2;
-    private static final long USER_ID_1 = 1L;
-    private static final long USER_ID_2 = 2L;
-    private static final long NON_EXISTENT_USER_ID = 28L;
+    private UserRegistrationRequest userRegistrationRequest1;
+
+    private static final Long USER_ID_1 = 1L;
+    private static final String USER_EMAIL_1 = "jane@gmail.com";
+    private static final String USER_FIRST_NAME_1 = "Jane";
+    private static final String USER_LAST_NAME_1 = "Doe";
+    private static final String NON_EXISTENT_EMAIL = "unknown@example.com";
 
 
     @BeforeEach
     void setUp() {
+        userRegistrationRequest1 = new UserRegistrationRequest(
+                USER_EMAIL_1,
+                USER_FIRST_NAME_1,
+                USER_LAST_NAME_1
+        );
+
         user1 = User.builder()
                 .userId(USER_ID_1)
-                .firstName("Jane")
-                .lastName("Doe")
-                .email("jane@gmail.com")
+                .email(USER_EMAIL_1)
+                .firstName(USER_FIRST_NAME_1)
+                .lastName(USER_LAST_NAME_1)
+                .registrationDate(LocalDateTime.now())
                 .build();
-        user2 = User.builder()
-                .userId(USER_ID_2)
-                .firstName("Jon")
-                .lastName("Smith")
-                .email("jjj@gmail.com")
-                .build();
-
     }
 
 
-    // getAllUsers
+    // registerUser
 
     @Test
-    void getAllUsers_ReturnsListOfUsers() throws Exception {
-        List<User> users = Arrays.asList(user1, user2);
-        when(userService.findAllUsers()).thenReturn(users);
+    void registerUser_ReturnsCreatedUser_WhenValidAndUnique() throws Exception {
+        when(userService.registerUser(any(User.class))).thenReturn(user1);
 
-        mockMvc.perform(get("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].userId", is((int) USER_ID_1)))
-                .andExpect(jsonPath("$[0].firstName", is(user1.getFirstName())))
-                .andExpect(jsonPath("$[1].userId", is((int) USER_ID_2)))
-                .andExpect(jsonPath("$[1].firstName", is(user2.getFirstName())));
-
-        verify(userService, times(1)).findAllUsers();
-    }
-
-    @Test
-    void getAllUsers_ReturnsEmptyList() throws Exception {
-        when(userService.findAllUsers()).thenReturn(Collections.emptyList());
-
-        mockMvc.perform(get("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
-
-        verify(userService, times(1)).findAllUsers();
-    }
-
-    // getUserById
-
-    @Test
-    void getUserById_ReturnsUser_WhenExists() throws Exception {
-        when(userService.findUserById(USER_ID_1)).thenReturn(user1);
-
-        mockMvc.perform(get("/api/v1/users/{id}", USER_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId", is(user1.getUserId().intValue())))
-                .andExpect(jsonPath("$.firstName", is(user1.getFirstName())))
-                .andExpect(jsonPath("$.lastName", is(user1.getLastName())))
-                .andExpect(jsonPath("$.email", is(user1.getEmail())));
-
-        verify(userService, times(1)).findUserById(USER_ID_1);
-    }
-
-    @Test
-    void getUserById_ReturnsNotFound_WhenDoesNotExist() throws Exception {
-        when(userService.findUserById(NON_EXISTENT_USER_ID))
-                .thenThrow(new ResourceNotFoundException("User not found"));
-
-        mockMvc.perform(get("/api/v1/users/{id}", NON_EXISTENT_USER_ID)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound());
-
-        verify(userService, times(1)).findUserById(NON_EXISTENT_USER_ID);
-    }
-
-    // addUser
-
-    @Test
-    void addUser_ReturnsUser_WhenValid() throws Exception {
-        when(userService.addUser(any(User.class))).thenReturn(user1);
-        String userJson = objectMapper.writeValueAsString(user1);
-
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(post("/api/v1/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
+                        .content(objectMapper.writeValueAsString(userRegistrationRequest1)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", "/api/v1/users/" + user1.getUserId()))
                 .andExpect(jsonPath("$.userId", is(user1.getUserId().intValue())))
+                .andExpect(jsonPath("$.email", is(user1.getEmail())))
                 .andExpect(jsonPath("$.firstName", is(user1.getFirstName())));
 
-        verify(userService, times(1)).addUser(any(User.class));
+        verify(userService, times(1)).registerUser(argThat(user ->
+                user.getEmail().equals(USER_EMAIL_1) &&
+                        user.getFirstName().equals(USER_FIRST_NAME_1) &&
+                        user.getLastName().equals(USER_LAST_NAME_1)
+        ));
     }
 
     @Test
-    void addUser_ReturnsConflict_WhenIdExists() throws Exception {
-        when(userService.addUser(any(User.class)))
-                .thenThrow(new DuplicateResourceException("ID exists"));
-        String userJson = objectMapper.writeValueAsString(user1);
+    void registerUser_ReturnsConflict_WhenEmailExists() throws Exception {
+        when(userService.registerUser(any(User.class)))
+                .thenThrow(new DuplicateResourceException("Email " + USER_EMAIL_1 + " already exists."));
 
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(post("/api/v1/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
+                        .content(objectMapper.writeValueAsString(userRegistrationRequest1)))
                 .andExpect(status().isConflict());
 
-        verify(userService, times(1)).addUser(any(User.class));
+        verify(userService, times(1)).registerUser(any(User.class));
     }
 
     @Test
-    void addUser_ReturnsBadRequest_WhenIllegalArgument() throws Exception {
-        when(userService.addUser(any(User.class)))
-                .thenThrow(new IllegalArgumentException("Invalid input"));
-        String userJson = objectMapper.writeValueAsString(user1);
+    void registerUser_ReturnsBadRequest_WhenEmailIsNull() throws Exception {
+        UserRegistrationRequest invalidRequest = new UserRegistrationRequest(null, "Test", "User");
 
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(post("/api/v1/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
-                .andExpect(status().isBadRequest());
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertEquals("email is required for registration.",
+                        ((ResponseStatusException) result.getResolvedException()).getReason()));
 
-        verify(userService, times(1)).addUser(any(User.class));
+        verify(userService, never()).registerUser(any(User.class));
     }
 
     @Test
-    void addUser_ReturnsBadRequest_WhenInvalidJson() throws Exception {
-        String invalidJson = "{\"userId\": 1, \"firstName\": \"Test\",";
+    void registerUser_ReturnsBadRequest_WhenEmailIsBlank() throws Exception {
+        UserRegistrationRequest invalidRequest = new UserRegistrationRequest(" ", "Test", "User");
 
-        mockMvc.perform(post("/api/v1/users")
+        mockMvc.perform(post("/api/v1/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertEquals("email is required for registration.",
+                        ((ResponseStatusException) result.getResolvedException()).getReason()));
+
+        verify(userService, never()).registerUser(any(User.class));
+    }
+
+
+    @Test
+    void registerUser_ReturnsBadRequest_WhenRequestBodyIsInvalid() throws Exception {
+        String invalidJson = "{\"email\": \"test@example.com\", \"firstName\": \"Test\"";
+
+        mockMvc.perform(post("/api/v1/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
 
-        verify(userService, never()).addUser(any(User.class));
+        verify(userService, never()).registerUser(any(User.class));
     }
 
-    // updateUser
+    // loginUser
 
     @Test
-    void updateUser_ReturnsUpdatedUser_WhenValid() throws Exception {
-        when(userService.updateUser(any(User.class))).thenReturn(user1);
-        String userJson = objectMapper.writeValueAsString(user1);
+    void loginUser_ReturnsUser_WhenEmailExists() throws Exception {
+        when(userService.loginUser(USER_EMAIL_1)).thenReturn(user1);
 
-        mockMvc.perform(put("/api/v1/users/{id}", USER_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
+        mockMvc.perform(get("/api/v1/users/login")
+                        .param("email", USER_EMAIL_1)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId", is(user1.getUserId().intValue())))
+                .andExpect(jsonPath("$.email", is(user1.getEmail())))
                 .andExpect(jsonPath("$.firstName", is(user1.getFirstName())));
 
-        verify(userService, times(1)).updateUser(any(User.class));
+        verify(userService, times(1)).loginUser(USER_EMAIL_1);
     }
 
     @Test
-    void updateUser_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
-        when(userService.updateUser(any(User.class)))
-                .thenThrow(new ResourceNotFoundException("User not found"));
-        String userJson = objectMapper.writeValueAsString(user1);
+    void loginUser_ReturnsNotFound_WhenEmailDoesNotExist() throws Exception {
+        when(userService.loginUser(NON_EXISTENT_EMAIL))
+                .thenThrow(new ResourceNotFoundException("User with email '" + NON_EXISTENT_EMAIL + "' not found."));
 
-        mockMvc.perform(put("/api/v1/users/{id}", USER_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
+        mockMvc.perform(get("/api/v1/users/login")
+                        .param("email", NON_EXISTENT_EMAIL)
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(userService, times(1)).updateUser(any(User.class));
+        verify(userService, times(1)).loginUser(NON_EXISTENT_EMAIL);
     }
 
     @Test
-    void updateUser_ReturnsBadRequest_WhenIdMismatch() throws Exception {
-        String userJson = objectMapper.writeValueAsString(user1);
-
-        mockMvc.perform(put("/api/v1/users/{id}", USER_ID_2)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
+    void loginUser_ReturnsBadRequest_WhenEmailParamIsMissing() throws Exception {
+        mockMvc.perform(get("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        verify(userService, never()).updateUser(any(User.class));
-    }
-
-    @Test
-    void updateUser_ReturnsBadRequest_WhenIllegalArgument() throws Exception {
-        when(userService.updateUser(any(User.class)))
-                .thenThrow(new IllegalArgumentException("Invalid data"));
-        String userJson = objectMapper.writeValueAsString(user1);
-
-        mockMvc.perform(put("/api/v1/users/{id}", USER_ID_1)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(userJson))
-                .andExpect(status().isBadRequest());
-
-        verify(userService, times(1)).updateUser(any(User.class));
-    }
-
-    // deleteUser
-
-    @Test
-    void deleteUser_ReturnsNoContent_WhenSuccessful() throws Exception {
-        doNothing().when(userService).deleteUser(USER_ID_1);
-
-        mockMvc.perform(delete("/api/v1/users/{id}", USER_ID_1))
-                .andExpect(status().isNoContent());
-
-        verify(userService, times(1)).deleteUser(USER_ID_1);
-    }
-
-    @Test
-    void deleteUser_ReturnsNotFound_WhenUserDoesNotExist() throws Exception {
-        doThrow(new ResourceNotFoundException("User not found")).when(userService).deleteUser(NON_EXISTENT_USER_ID);
-
-        mockMvc.perform(delete("/api/v1/users/{id}", NON_EXISTENT_USER_ID))
-                .andExpect(status().isNotFound());
-
-        verify(userService, times(1)).deleteUser(NON_EXISTENT_USER_ID);
+        verify(userService, never()).loginUser(anyString());
     }
 }
