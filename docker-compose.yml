@@ -1,4 +1,4 @@
-version: '2.34.0'
+version: '3.8'
 
 services:
   tasks-app:
@@ -7,4 +7,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=H2
+      - SPRING_PROFILES_ACTIVE=h2
+    networks:
+      - tasks-net
+networks:
+  tasks-net:
+    driver: bridge
