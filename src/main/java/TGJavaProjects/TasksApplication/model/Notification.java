@@ -1,22 +1,31 @@
 package TGJavaProjects.TasksApplication.model;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Builder
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Notification {
+
+    private Long notificationId;
+
     @NonNull
     private String text;
 
     @NonNull
-    private long userId;
+    @Builder.Default
+    private LocalDateTime date = LocalDateTime.now();
 
-    private LocalDateTime date;
+    @NonNull
+    private Long taskId;
 
-    private long TaskId;
+    @NonNull
+    private Long userId;
 
+    @NonNull
+    @Builder.Default
+    private Boolean isRead = false;
 }

@@ -1,31 +1,53 @@
 package TGJavaProjects.TasksApplication.controller;
 
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api/v1/notifications")
+@RequestMapping("/api/v1/users/{userId}/notifications")
 public class NotificationController {
 
-    private final NotificationService NOTIFICATION_SERVICE;
+    private final NotificationService notificationService;
 
     @GetMapping
-    public List<Notification> getAllNotifications() {
-        return NOTIFICATION_SERVICE.getAllNotifications();
+    public ResponseEntity<List<Notification>> getAllUserNotifications(@PathVariable Long userId) {
+        try {
+            List<Notification> notifications = notificationService.getAllNotificationsByUserId(userId);
+            return ResponseEntity.ok(notifications);
+        } catch (ResourceNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
     }
 
-    @GetMapping("/{userId}")
-    public List<Notification> getUserNotifications(@RequestBody long userId) {
-        return NOTIFICATION_SERVICE.getUserNotifications(userId);
+    @GetMapping("/pending")
+    public ResponseEntity<List<Notification>> getPendingUserNotifications(@PathVariable Long userId) {
+        try {
+            List<Notification> notifications = notificationService.getPendingNotificationsByUserId(userId);
+            return ResponseEntity.ok(notifications);
+        } catch (ResourceNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
     }
 
-    @GetMapping("/{taskId}")
-    public List<Notification> getTaskNotifications(@RequestBody long taskId) {
-        return NOTIFICATION_SERVICE.getTaskNotifications(taskId);
+    @PutMapping("/{notificationId}/read")
+    public ResponseEntity<Void> markNotificationAsRead(
+            @PathVariable Long userId,
+            @PathVariable Long notificationId) {
+        try {
+            notificationService.markNotificationAsRead(userId, notificationId);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
     }
 }
+

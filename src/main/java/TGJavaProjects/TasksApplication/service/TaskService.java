@@ -1,17 +1,21 @@
 package TGJavaProjects.TasksApplication.service;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Task;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public interface TaskService {
 
-    public List<Task> getAllTasks();
-    public Optional<Task> getTaskById(long taskId);
-    public List<Task> getTasksByUserId(long userId);
-    public Optional<Task> addTask (Task task);
-    public Optional<Task> deleteTask(long taskId);
+    public List<Task> findAllTasks() throws ResourceNotFoundException;;
+    public Task findTaskById(long userId, long taskId) throws ResourceNotFoundException;
+    public List<Task> getAllTasksByUserId(long userId) throws ResourceNotFoundException;
+    public List<Task> getPendingTasksByUserId(long userId) throws ResourceNotFoundException;
+    public Task createTaskForUser(long userId, Task task) throws ResourceNotFoundException, DuplicateResourceException;
+    public void softDeleteTask(long userId, long taskId) throws ResourceNotFoundException;
+    public Task markTaskAsCompleted(long userId, long taskId) throws ResourceNotFoundException;
+    public Task updateTaskDetails(long userId, long taskId, Task taskDetails) throws ResourceNotFoundException;
 }

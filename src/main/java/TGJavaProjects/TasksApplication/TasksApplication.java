@@ -13,9 +13,4 @@ public class TasksApplication {
 		SpringApplication.run(TasksApplication.class, args);
 	}
 
-	@GetMapping
-	public String hello(){
-		return "Hello there";
-	}
-
 }

@@ -1,43 +1,63 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
-import TGJavaProjects.TasksApplication.repository.InMemoryUserDAO;
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
+import TGJavaProjects.TasksApplication.repository.Implementations.InMemoryUserRepositoryImpl;
 import TGJavaProjects.TasksApplication.model.User;
+import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
-@AllArgsConstructor //для внедрения через конструктор
+@AllArgsConstructor
 public class InMemoryUserServiceImpl implements UserService {
 
-    private final InMemoryUserDAO REPOSITORY;
+    private final UserRepository userRepository;
 
     @Override
     public List<User> findAllUsers() {
-        return REPOSITORY.findAllUsers();
+        return userRepository.findAllUsers();
     }
 
     @Override
-    public Optional<User> addUser(User user) {
-        return Optional.ofNullable(REPOSITORY.addUser(user));
+    public User registerUser(User user) throws DuplicateResourceException {
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null for registration");
+        }
+
+        return userRepository.saveUser(user);
     }
 
     @Override
-    public Optional<User> findUserById(long userId) {
-        return Optional.ofNullable(REPOSITORY.findUserById(userId));
+    public User findUserById(long userId) throws ResourceNotFoundException {
+        return userRepository.findUserById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "user " + userId + " not found"));
     }
 
     @Override
-    public Optional<User> updateUser(User user) {
-        return Optional.ofNullable(REPOSITORY.updateUser(user));
+    public User loginUser(String email) throws ResourceNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "user with email '" + email + "' not found. Cannot login."));
     }
 
     @Override
-    public Optional<User> deleteUser(long userId) {
-        return Optional.ofNullable(REPOSITORY.deleteUser(userId));
+    public void deleteUser(long userId)
+            throws RuntimeException{
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    "delete error. user with id " + userId +
+                            " not found");
+        }
+
+        boolean isDeleted = userRepository.deleteUser(userId);
+        if (! isDeleted) {
+            throw new RuntimeException("delete failed for user " + userId);
+        }
     }
 
 }
