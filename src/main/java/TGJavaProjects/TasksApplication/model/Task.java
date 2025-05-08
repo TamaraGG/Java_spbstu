@@ -1,15 +1,13 @@
 package TGJavaProjects.TasksApplication.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Builder
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class Task {
 
     @NonNull
@@ -21,12 +19,17 @@ public class Task {
     private LocalDateTime dueDate;
 
     @NonNull
-    private LocalDateTime creationDate;
+    @Builder.Default
+    private LocalDateTime creationDate = LocalDateTime.now();
 
     @NonNull
-    private Boolean isComplete;
+    @Builder.Default
+    private Boolean isComplete = false;
 
     @NonNull
     private Long userId;
+
+    @Builder.Default
+    private Boolean isDeleted = false;
 
 }
