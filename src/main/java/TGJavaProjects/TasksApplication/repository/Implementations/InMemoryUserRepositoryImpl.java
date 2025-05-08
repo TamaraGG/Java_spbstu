@@ -85,4 +85,11 @@ public class InMemoryUserRepositoryImpl implements UserRepository {
         return users.stream()
                 .anyMatch(u -> u.getEmail().equalsIgnoreCase(email));
     }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return users.stream()
+                .filter(user -> user.getEmail().equalsIgnoreCase(email)) // Игнорируем регистр
+                .findFirst();
+    }
 }
