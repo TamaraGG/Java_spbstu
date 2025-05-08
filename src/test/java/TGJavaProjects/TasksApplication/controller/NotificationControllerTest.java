@@ -70,10 +70,10 @@ class NotificationControllerTest {
         notification2 = Notification.builder()
                 .notificationId(NOTIFICATION_ID_2)
                 .userId(USER_ID_1)
-                .taskId(TASK_ID_FOR_NOTIFICATION_2) // Добавлено
+                .taskId(TASK_ID_FOR_NOTIFICATION_2)
                 .text("Notification 2 text")
                 .date(NOW)
-                .isRead(false) // Изменил для теста pending
+                .isRead(false)
                 .build();
 
         notification1Read = Notification.builder()
@@ -151,7 +151,8 @@ class NotificationControllerTest {
         mockMvc.perform(get("/api/v1/users/{userId}/notifications/pending", NON_EXISTENT_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-        verify(notificationService, times(1)).getPendingNotificationsByUserId(NON_EXISTENT_USER_ID);
+        verify(notificationService, times(1))
+                .getPendingNotificationsByUserId(NON_EXISTENT_USER_ID);
     }
 
     // markNotificationAsRead
@@ -160,9 +161,11 @@ class NotificationControllerTest {
     void markNotificationAsRead_ReturnsNoContent_WhenSuccessful() throws Exception {
         doNothing().when(notificationService).markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1);
 
-        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read", USER_ID_1, NOTIFICATION_ID_1))
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read",
+                        USER_ID_1, NOTIFICATION_ID_1))
                 .andExpect(status().isNoContent());
-        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1);
+        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1,
+                NOTIFICATION_ID_1);
     }
 
     @Test
@@ -170,9 +173,11 @@ class NotificationControllerTest {
         doThrow(new ResourceNotFoundException("Notification not found"))
                 .when(notificationService).markNotificationAsRead(USER_ID_1, NON_EXISTENT_NOTIFICATION_ID);
 
-        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read", USER_ID_1, NON_EXISTENT_NOTIFICATION_ID))
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read",
+                        USER_ID_1, NON_EXISTENT_NOTIFICATION_ID))
                 .andExpect(status().isNotFound());
-        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1, NON_EXISTENT_NOTIFICATION_ID);
+        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1,
+                NON_EXISTENT_NOTIFICATION_ID);
     }
 
     @Test
@@ -180,8 +185,10 @@ class NotificationControllerTest {
         doThrow(new ResourceNotFoundException("User not found"))
                 .when(notificationService).markNotificationAsRead(NON_EXISTENT_USER_ID, NOTIFICATION_ID_1);
 
-        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read", NON_EXISTENT_USER_ID, NOTIFICATION_ID_1))
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read",
+                        NON_EXISTENT_USER_ID, NOTIFICATION_ID_1))
                 .andExpect(status().isNotFound());
-        verify(notificationService, times(1)).markNotificationAsRead(NON_EXISTENT_USER_ID, NOTIFICATION_ID_1);
+        verify(notificationService, times(1))
+                .markNotificationAsRead(NON_EXISTENT_USER_ID, NOTIFICATION_ID_1);
     }
 }

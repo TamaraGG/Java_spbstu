@@ -405,7 +405,7 @@ class TaskControllerTest {
 
     @Test
     void updateTaskDetails_ReturnsBadRequest_WhenIllegalArgumentInService() throws Exception {
-        TaskRequest updateRequest = new TaskRequest("", NOW); // Пустой текст, например
+        TaskRequest updateRequest = new TaskRequest("", NOW);
         when(taskService.updateTaskDetails(eq(USER_ID_1), eq(TASK_ID_1), any(Task.class)))
                 .thenThrow(new IllegalArgumentException("Task text cannot be blank"));
 
