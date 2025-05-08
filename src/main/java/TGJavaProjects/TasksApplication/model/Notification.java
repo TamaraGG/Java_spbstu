@@ -1,15 +1,13 @@
 package TGJavaProjects.TasksApplication.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Builder
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class Notification {
 
     @NonNull
@@ -19,8 +17,15 @@ public class Notification {
     private String text;
 
     @NonNull
-    private LocalDateTime date;
+    @Builder.Default
+    private LocalDateTime date = LocalDateTime.now();
 
     @NonNull
     private Long TaskId;
+
+    @NonNull
+    private Long userId;
+
+    @Builder.Default
+    private Boolean isRead = false;
 }
