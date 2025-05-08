@@ -1,29 +1,20 @@
 package TGJavaProjects.TasksApplication.repository.Implementations;
 
-import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.model.Task;
-import TGJavaProjects.TasksApplication.repository.Implementations.InMemoryTaskRepositoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-//import org.mockito.Mock;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.when;
 
-@SpringBootTest
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("in-memory")
 class InMemoryTaskRepositoryImplTest {
 
     private InMemoryTaskRepositoryImpl repository;
@@ -31,7 +22,6 @@ class InMemoryTaskRepositoryImplTest {
     private Task taskToSave1User1;
     private Task taskToSave2User1;
     private Task taskToSave1User2;
-
     private static final long USER_ID_1 = 1L;
     private static final long USER_ID_2 = 2L;
     private static final long NON_EXISTENT_TASK_ID = 999L;
@@ -43,10 +33,7 @@ class InMemoryTaskRepositoryImplTest {
         taskToSave1User1 = Task.builder()
                 .userId(USER_ID_1)
                 .taskText("Task 1 User 1 Text")
-                .creationDate(LocalDateTime.now().minusDays(1))
                 .dueDate(LocalDateTime.now().plusDays(5))
-                .isComplete(false)
-                .isDeleted(false)
                 .build();
 
         taskToSave2User1 = Task.builder()
@@ -55,32 +42,29 @@ class InMemoryTaskRepositoryImplTest {
                 .creationDate(LocalDateTime.now())
                 .dueDate(LocalDateTime.now().plusDays(2))
                 .isComplete(true)
-                .isDeleted(false)
                 .build();
 
         taskToSave1User2 = Task.builder()
                 .userId(USER_ID_2)
                 .taskText("Task 1 User 2 Text")
-                .creationDate(LocalDateTime.now())
-                .isComplete(false)
-                .isDeleted(false)
                 .build();
     }
 
-    // findAllTasks
+    // findAllNonDeleted
 
     @Test
-    void findAllTasks_ReturnsOnlyNonDeletedTasks() {
-        Task savedTask1 = repository.saveTask(taskToSave1User1);
-        Task savedTask2 = repository.saveTask(taskToSave1User2);
+    void findAllNonDeleted_ReturnsOnlyNonDeletedTasks() {
+        Task savedTask1 = repository.save(taskToSave1User1);
+        Task savedTask2 = repository.save(taskToSave1User2);
 
-        Task taskToDelete = Task.builder().userId(USER_ID_1)
-                .taskText("To Delete").isDeleted(false).build();
-        Task savedTaskToDelete = repository.saveTask(taskToDelete);
+        Task taskToDelete = Task.builder()
+                .userId(USER_ID_1)
+                .taskText("To Delete").build();
+        Task savedTaskToDelete = repository.save(taskToDelete);
         savedTaskToDelete.setIsDeleted(true);
-        repository.updateTask(savedTaskToDelete);
+        repository.save(savedTaskToDelete);
 
-        List<Task> receivedTasks = repository.findAllTasks();
+        List<Task> receivedTasks = repository.findByIsDeletedFalse();
 
         assertNotNull(receivedTasks);
         assertEquals(2, receivedTasks.size());
@@ -93,64 +77,71 @@ class InMemoryTaskRepositoryImplTest {
     }
 
     @Test
-    void findAllTasks_ReturnsEmptyList_WhenAllTasksAreDeletedOrEmpty() {
+    void findAllNonDeleted_ReturnsEmptyList_WhenAllTasksAreDeletedOrEmpty() {
         Task taskToDelete = Task.builder()
                 .userId(USER_ID_1)
-                .taskText("To Delete")
-                .isDeleted(false).build();
-        Task savedTaskToDelete = repository.saveTask(taskToDelete);
+                .taskText("To Delete").build();
+        Task savedTaskToDelete = repository.save(taskToDelete);
         savedTaskToDelete.setIsDeleted(true);
-        repository.updateTask(savedTaskToDelete);
+        repository.save(savedTaskToDelete);
 
-        List<Task> receivedTasks = repository.findAllTasks();
+        List<Task> receivedTasks = repository.findByIsDeletedFalse();
         assertNotNull(receivedTasks);
         assertTrue(receivedTasks.isEmpty());
 
         repository = new InMemoryTaskRepositoryImpl();
-        receivedTasks = repository.findAllTasks();
+        receivedTasks = repository.findByIsDeletedFalse();
         assertNotNull(receivedTasks);
         assertTrue(receivedTasks.isEmpty());
     }
 
-    // findTaskById
+    // findByIdNonDeleted
 
     @Test
-    void findTaskById_ReturnsOptionalWithTask_WhenExistsAndNotDeleted() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
-        Optional<Task> foundTaskOpt = repository.findTaskById(savedTask.getTaskId());
+    void findByTaskIdAndIsDeleted_ReturnsOptionalWithTask_WhenExistsAndNotDeletedFalse() {
+        Task savedTask = repository.save(taskToSave1User1);
+        Optional<Task> foundTaskOpt = repository.findByTaskIdAndIsDeletedFalse(savedTask.getTaskId());
         assertTrue(foundTaskOpt.isPresent());
         assertEquals(savedTask.getTaskText(), foundTaskOpt.get().getTaskText());
     }
 
     @Test
-    void findTaskById_ReturnsEmptyOptional_WhenDoesNotExist() {
-        repository.saveTask(taskToSave1User1);
-        Optional<Task> foundTaskOpt = repository.findTaskById(NON_EXISTENT_TASK_ID);
+    void findByTaskIdAndIsDeleted_False_ReturnsEmptyOptional_WhenDoesNotExist() {
+        repository.save(taskToSave1User1);
+        Optional<Task> foundTaskOpt = repository.findByTaskIdAndIsDeletedFalse(NON_EXISTENT_TASK_ID);
         assertTrue(foundTaskOpt.isEmpty());
     }
 
     @Test
-    void findTaskById_ReturnsEmptyOptional_WhenExistsButDeleted() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
+    void findByTaskIdAndIsDeleted_ReturnsEmptyOptional_WhenExistsButDeletedFalse() {
+        Task savedTask = repository.save(taskToSave1User1);
         savedTask.setIsDeleted(true);
-        repository.updateTask(savedTask);
+        repository.save(savedTask);
 
-        Optional<Task> foundTaskOpt = repository.findTaskById(savedTask.getTaskId());
+        Optional<Task> foundTaskOpt = repository.findByTaskIdAndIsDeletedFalse(savedTask.getTaskId());
         assertTrue(foundTaskOpt.isEmpty());
     }
+
+    @Test
+    void findByIdNonDeleted_ReturnsEmptyOptional_WhenTaskIdIsNullFalse() {
+        repository.save(taskToSave1User1);
+        Optional<Task> foundTaskOpt = repository.findByTaskIdAndIsDeletedFalse(null);
+        assertTrue(foundTaskOpt.isEmpty());
+    }
+
 
     // findTasksByUserId
 
     @Test
     void findTasksByUserId_ReturnsOnlyNonDeletedUserTasks() {
-        Task savedTask1 = repository.saveTask(taskToSave1User1);
-        Task savedTask2 = repository.saveTask(taskToSave2User1);
-        repository.saveTask(taskToSave1User2);
+        Task savedTask1 = repository.save(taskToSave1User1);
+        Task savedTask2 = repository.save(taskToSave2User1);
+        repository.save(taskToSave1User2);
 
         savedTask2.setIsDeleted(true);
-        repository.updateTask(savedTask2);
+        repository.save(savedTask2);
 
-        List<Task> user1Tasks = repository.findTasksByUserId(USER_ID_1);
+        List<Task> user1Tasks = repository.findByUserIdAndIsDeletedFalse(USER_ID_1);
         assertNotNull(user1Tasks);
         assertEquals(1, user1Tasks.size());
         assertTrue(user1Tasks.stream()
@@ -161,67 +152,77 @@ class InMemoryTaskRepositoryImplTest {
 
     @Test
     void findTasksByUserId_ReturnsEmptyList_WhenUserHasNoTasksOrAllAreDeleted() {
-        repository.saveTask(taskToSave1User2);
-        List<Task> user1Tasks = repository.findTasksByUserId(USER_ID_1);
+        repository.save(taskToSave1User2);
+        List<Task> user1Tasks = repository.findByUserIdAndIsDeletedFalse(USER_ID_1);
         assertNotNull(user1Tasks);
         assertTrue(user1Tasks.isEmpty());
 
-        Task savedTask1 = repository.saveTask(taskToSave1User1);
+        Task savedTask1 = repository.save(taskToSave1User1);
         savedTask1.setIsDeleted(true);
-        repository.updateTask(savedTask1);
-        user1Tasks = repository.findTasksByUserId(USER_ID_1);
+        repository.save(savedTask1);
+        user1Tasks = repository.findByUserIdAndIsDeletedFalse(USER_ID_1);
         assertNotNull(user1Tasks);
         assertTrue(user1Tasks.isEmpty());
     }
 
-    // saveTask
+    @Test
+    void findTasksByUserId_ReturnsEmptyList_WhenUserIdIsNull() {
+        repository.save(taskToSave1User1);
+        List<Task> userTasks = repository.findByUserIdAndIsDeletedFalse(null);
+        assertNotNull(userTasks);
+        assertTrue(userTasks.isEmpty());
+    }
+
+
+    // save
 
     @Test
-    void saveTask_NewTask_AssignsIdAndReturnsSavedTask() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
+    void save_NewTask_AssignsIdAndReturnsSavedTask() {
+        Task savedTask = repository.save(taskToSave1User1);
 
         assertNotNull(savedTask);
         assertNotNull(savedTask.getTaskId());
         assertEquals(taskToSave1User1.getTaskText(), savedTask.getTaskText());
         assertEquals(USER_ID_1, savedTask.getUserId());
+        assertNotNull(savedTask.getCreationDate());
+        assertNotNull(savedTask.getIsComplete());
+        assertNotNull(savedTask.getIsDeleted());
 
-        assertTrue(repository.existsById(savedTask.getTaskId()));
-        assertEquals(Optional.of(savedTask), repository.findTaskById(savedTask.getTaskId()));
+
+        assertTrue(repository.existsByTaskIdAndIsDeletedFalse(savedTask.getTaskId()));
+        assertEquals(Optional.of(savedTask), repository
+                .findByTaskIdAndIsDeletedFalse(savedTask.getTaskId()));
     }
 
     @Test
-    void saveTask_NewTask_DoesNotThrowDuplicate_IfCalledMultipleTimesWithDifferentObjects() {
-        Task savedTask1 = repository.saveTask(taskToSave1User1);
+    void save_NewTask_DoesNotThrowDuplicate_IfCalledMultipleTimesWithDifferentObjects() {
+        Task savedTask1 = repository.save(taskToSave1User1);
 
         Task anotherTaskToSave = Task.builder()
                 .userId(taskToSave1User1.getUserId())
                 .taskText(taskToSave1User1.getTaskText())
-                .isComplete(taskToSave1User1.getIsComplete())
-                .isDeleted(taskToSave1User1.getIsDeleted())
                 .build();
-        Task savedTask2 = repository.saveTask(anotherTaskToSave);
+        Task savedTask2 = repository.save(anotherTaskToSave);
 
         assertNotNull(savedTask1.getTaskId());
         assertNotNull(savedTask2.getTaskId());
         assertNotEquals(savedTask1.getTaskId(), savedTask2.getTaskId());
-        assertEquals(2, repository.findAllTasks().size());
+        assertEquals(2, repository.findByIsDeletedFalse().size());
     }
 
 
     @Test
-    void saveTask_ThrowsIllegalArgumentException_WhenTaskIsNull() {
+    void save_ThrowsIllegalArgumentException_WhenTaskIsNull() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> repository.saveTask(null)
+                () -> repository.save(null)
         );
         assertEquals("task cannot be null", exception.getMessage());
     }
 
-    // saveTask
-
     @Test
-    void saveTask_ExistingTask_UpdatesAndReturnsTask() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
+    void save_ExistingTask_UpdatesAndReturnsTask() {
+        Task savedTask = repository.save(taskToSave1User1);
         Long originalId = savedTask.getTaskId();
 
         Task taskToUpdate = Task.builder()
@@ -234,20 +235,51 @@ class InMemoryTaskRepositoryImplTest {
                 .isDeleted(savedTask.getIsDeleted())
                 .build();
 
-        Task updatedTask = repository.saveTask(taskToUpdate);
+        Task updatedTask = repository.save(taskToUpdate);
 
         assertNotNull(updatedTask);
         assertEquals(originalId, updatedTask.getTaskId());
         assertEquals("Updated Text", updatedTask.getTaskText());
         assertTrue(updatedTask.getIsComplete());
 
-        Optional<Task> foundOpt = repository.findTaskById(originalId);
+        Optional<Task> foundOpt = repository.findByTaskIdAndIsDeletedFalse(originalId);
         assertTrue(foundOpt.isPresent());
         assertEquals("Updated Text", foundOpt.get().getTaskText());
     }
 
     @Test
-    void saveTask_ExistingTask_ThrowsIllegalArgumentException_WhenUpdatingNonExistingTask() {
+    void save_ExistingTask_CanMarkAsDeleted() {
+        Task savedTask = repository.save(taskToSave1User1);
+        Long originalId = savedTask.getTaskId();
+
+        Task taskToUpdate = Task.builder()
+                .taskId(originalId)
+                .userId(savedTask.getUserId())
+                .taskText(savedTask.getTaskText())
+                .creationDate(savedTask.getCreationDate())
+                .dueDate(savedTask.getDueDate())
+                .isComplete(savedTask.getIsComplete())
+                .isDeleted(true)
+                .build();
+
+        Task updatedTask = repository.save(taskToUpdate);
+
+        assertNotNull(updatedTask);
+        assertEquals(originalId, updatedTask.getTaskId());
+        assertTrue(updatedTask.getIsDeleted());
+
+        assertFalse(repository.findByTaskIdAndIsDeletedFalse(originalId).isPresent());
+        assertFalse(repository.existsByTaskIdAndIsDeletedFalse(originalId));
+        assertTrue(repository.findByUserIdAndIsDeletedFalse(USER_ID_1).isEmpty());
+        assertTrue(repository.findByIsDeletedFalse().isEmpty());
+
+        assertTrue(repository.findById(originalId).isPresent());
+        assertTrue(repository.existsById(originalId));
+    }
+
+
+    @Test
+    void save_ExistingTask_ThrowsIllegalArgumentException_WhenUpdatingNonExistingTask() {
         Task nonExistentTaskToUpdate = Task.builder()
                 .taskId(NON_EXISTENT_TASK_ID)
                 .userId(USER_ID_1)
@@ -256,82 +288,37 @@ class InMemoryTaskRepositoryImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> repository.saveTask(nonExistentTaskToUpdate)
+                () -> repository.save(nonExistentTaskToUpdate)
         );
         assertTrue(exception.getMessage()
-                .contains("cannot update non-existing task with id " + NON_EXISTENT_TASK_ID));
+                .contains("Task with id " + NON_EXISTENT_TASK_ID + " not found for update via save."));
     }
 
-
-    // updateTask
+    // existsByIdNonDeleted
 
     @Test
-    void updateTask_UpdatesExistingTask_IncludingIsDeleted() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
-        Long taskId = savedTask.getTaskId();
+    void existsByIdNonDeleted_ReturnsTrue_WhenExistsAndNotDeletedTask() {
+        Task savedTask = repository.save(taskToSave1User1);
+        assertTrue(repository.existsByTaskIdAndIsDeletedFalse(savedTask.getTaskId()));
+    }
 
+    @Test
+    void existsByTaskIdAndIsDeleted_False_ReturnsFalse_WhenDoesNotExist() {
+        assertFalse(repository.existsByTaskIdAndIsDeletedFalse(NON_EXISTENT_TASK_ID));
+    }
+
+    @Test
+    void existsByIdNonDeleted_ReturnsFalse_WhenExistsButDeletedTask() {
+        Task savedTask = repository.save(taskToSave1User1);
         savedTask.setIsDeleted(true);
-        savedTask.setTaskText("Soft Deleted Task");
-        Task updatedTask = repository.updateTask(savedTask);
-
-        assertNotNull(updatedTask);
-        assertEquals(taskId, updatedTask.getTaskId());
-        assertTrue(updatedTask.getIsDeleted());
-        assertEquals("Soft Deleted Task", updatedTask.getTaskText());
-
-        Optional<Task> foundOpt = repository.findTaskById(taskId);
-        assertTrue(foundOpt.isEmpty());
-
-        List<Task> allTasks = repository.findAllTasks();
-        assertFalse(allTasks.stream().anyMatch(t -> t.getTaskId().equals(taskId)));
+        repository.save(savedTask);
+        assertFalse(repository.existsByTaskIdAndIsDeletedFalse(savedTask.getTaskId()));
     }
 
     @Test
-    void updateTask_ThrowsIllegalArgumentException_WhenTaskIsNull() {
-        assertThrows(IllegalArgumentException.class, () -> repository.updateTask(null));
-    }
-
-    @Test
-    void updateTask_ThrowsIllegalArgumentException_WhenTaskIdIsNull() {
-        Task taskWithNullId = Task.builder()
-                .userId(USER_ID_1)
-                .taskText("text").build();
-        assertThrows(IllegalArgumentException.class, () -> repository.updateTask(taskWithNullId));
-    }
-
-    @Test
-    void updateTask_ThrowsIllegalArgumentException_WhenTaskNotFoundForUpdate() {
-        Task nonExistentTask = Task.builder()
-                .taskId(NON_EXISTENT_TASK_ID)
-                .userId(USER_ID_1)
-                .taskText("text").build();
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> repository.updateTask(nonExistentTask)
-        );
-        assertTrue(exception.getMessage()
-                .contains("task with id " + NON_EXISTENT_TASK_ID + " not found for update."));
-    }
-
-    // existsById
-
-    @Test
-    void existsById_ReturnsTrue_WhenExistsAndNotDeleted() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
-        assertTrue(repository.existsById(savedTask.getTaskId()));
-    }
-
-    @Test
-    void existsById_ReturnsFalse_WhenDoesNotExist() {
-        assertFalse(repository.existsById(NON_EXISTENT_TASK_ID));
-    }
-
-    @Test
-    void existsById_ReturnsFalse_WhenExistsButDeleted() {
-        Task savedTask = repository.saveTask(taskToSave1User1);
-        savedTask.setIsDeleted(true);
-        repository.updateTask(savedTask);
-        assertFalse(repository.existsById(savedTask.getTaskId()));
+    void existsByIdNonDeleted_ReturnsFalse_WhenTaskIdIsNullFalse() {
+        repository.save(taskToSave1User1);
+        assertFalse(repository.existsByTaskIdAndIsDeletedFalse(null));
     }
 
 }
