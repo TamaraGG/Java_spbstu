@@ -1,13 +1,11 @@
 package TGJavaProjects.TasksApplication.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
+import lombok.*;
 
 @Builder
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class User {
 
     @NonNull
