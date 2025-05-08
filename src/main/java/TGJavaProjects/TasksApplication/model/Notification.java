@@ -22,4 +22,7 @@ public class Notification {
 
     @NonNull
     private Long taskId;
+
+    @Builder.Default
+    private Boolean isRead = false;
 }
