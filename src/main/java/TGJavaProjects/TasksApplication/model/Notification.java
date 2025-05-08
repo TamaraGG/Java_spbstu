@@ -21,11 +21,5 @@ public class Notification {
     private LocalDateTime date = LocalDateTime.now();
 
     @NonNull
-    private Long TaskId;
-
-    @NonNull
-    private Long userId;
-
-    @Builder.Default
-    private Boolean isRead = false;
+    private Long taskId;
 }
