@@ -167,7 +167,7 @@ class NotificationControllerTest {
                 .andExpect(status().isNoContent());
         verify(notificationService, times(1))
                 .markNotificationAsRead(USER_ID_1,
-                NOTIFICATION_ID_1);
+                        NOTIFICATION_ID_1);
     }
 
     @Test

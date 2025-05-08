@@ -1,3 +1,4 @@
+
 package TGJavaProjects.TasksApplication.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -8,7 +9,6 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
 
 
 
@@ -65,6 +65,5 @@ public class Task {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     @JsonManagedReference("task-notifications")
-    @Builder.Default
     private List<Notification> notifications = new ArrayList<>();
 }

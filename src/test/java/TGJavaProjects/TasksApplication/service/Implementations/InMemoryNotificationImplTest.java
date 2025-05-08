@@ -210,9 +210,9 @@ class InMemoryNotificationImplTest {
                 .findById(NOTIFICATION_ID_1);
         verify(notificationRepository, times(1))
                 .save(argThat(notification ->
-                notification.getNotificationId().equals(NOTIFICATION_ID_1) &&
-                        notification.getIsRead()
-        ));
+                        notification.getNotificationId().equals(NOTIFICATION_ID_1) &&
+                                notification.getIsRead()
+                ));
     }
 
     @Test
