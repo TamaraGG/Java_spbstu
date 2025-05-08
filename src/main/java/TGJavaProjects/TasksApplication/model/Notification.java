@@ -23,7 +23,7 @@ public class Notification {
     private Long taskId;
 
     @NonNull
-    private Long usereId;
+    private Long userId;
 
     @NonNull
     @Builder.Default
