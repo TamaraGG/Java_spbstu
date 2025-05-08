@@ -1,5 +1,6 @@
 package TGJavaProjects.TasksApplication.service;
 
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
 import org.springframework.stereotype.Service;
 
@@ -9,9 +10,8 @@ import java.util.List;
 public interface NotificationService {
 
     public List<Notification> findAllNotifications();
-    public List<Notification> findNotificationsByUserId(long userId);
-    public List<Notification> findNotificationsByTaskId(long taskId);
-    public Notification findNotificationById(long notificationId);
-    public Notification addNotification(Notification notification);
-    public void deleteNotification(long notificationId);
+    public List<Notification> getAllNotificationsByUserId(long userId) throws ResourceNotFoundException;
+    public List<Notification> getPendingNotificationsByUserId(long userId) throws ResourceNotFoundException;
+    public Notification addNotification(Notification notification) throws ResourceNotFoundException;
+    public void markNotificationAsRead(long userId, long notificationId) throws ResourceNotFoundException;
 }

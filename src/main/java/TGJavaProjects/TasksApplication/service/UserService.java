@@ -1,5 +1,7 @@
 package TGJavaProjects.TasksApplication.service;
 
+import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
+import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.User;
 import org.springframework.stereotype.Service;
 
@@ -10,8 +12,8 @@ import java.util.Optional;
 public interface UserService {
 
     public List<User> findAllUsers();
-    public User addUser(User user);
-    public User findUserById(long userId);
-    public User updateUser (User user);
-    public void deleteUser (long userId);
+    public User registerUser(User user) throws DuplicateResourceException;
+    public User findUserById(long userId) throws ResourceNotFoundException;
+    public User loginUser(String username) throws ResourceNotFoundException;
+    public void deleteUser (long userId) throws ResourceNotFoundException;
 }
