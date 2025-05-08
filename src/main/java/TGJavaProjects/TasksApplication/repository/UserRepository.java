@@ -7,10 +7,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository {
-    List<User> findAllUsers();
-    User saveUser(User user) throws IllegalArgumentException, DuplicateResourceException;
-    Optional<User> findUserById(Long userId);
-    boolean deleteUser(long userId);
-    boolean existsById(Long userId);
-    boolean existsByEmail(String email);
+    public List<User> findAllUsers();
+    public User saveUser(User user) throws IllegalArgumentException, DuplicateResourceException;
+    public Optional<User> findUserById(Long userId);
+    public boolean deleteUser(long userId);
+    public boolean existsById(Long userId);
+    public boolean existsByEmail(String email);
+    public Optional<User> findByEmail(String email);
 }
