@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Notification {
 
-    @NonNull
     private Long notificationId;
 
     @NonNull
@@ -23,6 +22,10 @@ public class Notification {
     @NonNull
     private Long taskId;
 
+    @NonNull
+    private Long usereId;
+
+    @NonNull
     @Builder.Default
     private Boolean isRead = false;
 }
