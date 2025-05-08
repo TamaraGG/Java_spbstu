@@ -45,12 +45,12 @@ public class Notification {
             insertable = false, updatable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private Task taskEntity;
+    private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id_fk", referencedColumnName = "userId",
             insertable = false, updatable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private User userEntity;
+    private User user;
 }
