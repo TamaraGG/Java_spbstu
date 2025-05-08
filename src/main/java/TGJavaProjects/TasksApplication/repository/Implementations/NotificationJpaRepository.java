@@ -12,5 +12,6 @@ import java.util.List;
 @Profile("h2")
 public interface NotificationJpaRepository
         extends NotificationRepository, JpaRepository<Notification, Long> {
-    List<Notification> findByUserId(Long userId);
+    @Override
+    List<Notification> findNotificationsByUserId(long userId);
 }
