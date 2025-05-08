@@ -109,7 +109,7 @@ class InMemoryUserServiceImplTest {
                 IllegalArgumentException.class,
                 () -> userService.registerUser(null)
         );
-        assertEquals("user and email cannot be null for registration", exception.getMessage());
+        assertEquals("user cannot be null for registration", exception.getMessage());
         verify(userRepository, never()).saveUser(any());
     }
 
