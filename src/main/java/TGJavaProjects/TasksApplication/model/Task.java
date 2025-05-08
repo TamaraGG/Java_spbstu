@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Task {
 
-    @NonNull
     private Long taskId;
 
     @NonNull
@@ -29,6 +28,7 @@ public class Task {
     @NonNull
     private Long userId;
 
+    @NonNull
     @Builder.Default
     private Boolean isDeleted = false;
 
