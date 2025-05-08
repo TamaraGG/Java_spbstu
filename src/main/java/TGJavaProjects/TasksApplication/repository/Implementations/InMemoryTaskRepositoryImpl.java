@@ -1,6 +1,5 @@
 package TGJavaProjects.TasksApplication.repository.Implementations;
 
-import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import org.springframework.context.annotation.Profile;

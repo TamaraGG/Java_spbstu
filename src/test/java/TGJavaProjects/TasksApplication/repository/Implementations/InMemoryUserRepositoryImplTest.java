@@ -2,7 +2,6 @@ package TGJavaProjects.TasksApplication.repository.Implementations;
 
 import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.model.User;
-import TGJavaProjects.TasksApplication.repository.Implementations.InMemoryUserRepositoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
