@@ -89,7 +89,7 @@ public class InMemoryUserRepositoryImpl implements UserRepository {
     @Override
     public Optional<User> findByEmail(String email) {
         return users.stream()
-                .filter(user -> user.getEmail().equalsIgnoreCase(email)) // Игнорируем регистр
+                .filter(user -> user.getEmail().equalsIgnoreCase(email))
                 .findFirst();
     }
 }

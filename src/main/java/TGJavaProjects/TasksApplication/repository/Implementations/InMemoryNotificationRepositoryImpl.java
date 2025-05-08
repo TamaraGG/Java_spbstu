@@ -33,7 +33,7 @@ public class InMemoryNotificationRepositoryImpl implements NotificationRepositor
     public List<Notification> findNotificationsByUserId(long userId) {
         return notifications.stream()
                 .filter(notification -> notification.getUserId().equals(userId))
-                .collect(Collectors.toList()); // Изменено на collect
+                .collect(Collectors.toList());
     }
 
     @Override
