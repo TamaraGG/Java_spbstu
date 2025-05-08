@@ -1,6 +1,5 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
-import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.repository.NotificationRepository;
@@ -32,7 +31,6 @@ class InMemoryNotificationImplTest {
 
     private Notification notification1, notification2, notification1Read;
     private Notification notificationToCreate;
-
     private static final long USER_ID_1 = 1L;
     private static final long TASK_ID_1 = 100L;
     private static final long NOTIFICATION_ID_1 = 10L;
@@ -84,10 +82,12 @@ class InMemoryNotificationImplTest {
     @Test
     void findAllNotifications_ReturnsListOfNotificationsFromRepository() {
         List<Notification> expected = List.of(notification1, notification2);
-        when(notificationRepository.findAllNotifications()).thenReturn(expected);
+        when(notificationRepository.findAll()).thenReturn(expected);
+
         List<Notification> actual = notificationService.findAllNotifications();
+
         assertEquals(expected, actual);
-        verify(notificationRepository, times(1)).findAllNotifications();
+        verify(notificationRepository, times(1)).findAll();
     }
 
     // getAllNotificationsByUserId
@@ -96,9 +96,11 @@ class InMemoryNotificationImplTest {
     void getAllNotificationsByUserId_ReturnsUserNotifications_WhenUserExists() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
         List<Notification> expectedNotifications = List.of(notification1, notification2);
-        when(notificationRepository.findNotificationsByUserId(USER_ID_1)).thenReturn(expectedNotifications);
+        when(notificationRepository.findNotificationsByUserId(USER_ID_1))
+                .thenReturn(expectedNotifications);
 
-        List<Notification> actualNotifications = notificationService.getAllNotificationsByUserId(USER_ID_1);
+        List<Notification> actualNotifications = notificationService
+                .getAllNotificationsByUserId(USER_ID_1);
 
         assertNotNull(actualNotifications);
         assertEquals(expectedNotifications, actualNotifications);
@@ -119,10 +121,8 @@ class InMemoryNotificationImplTest {
     @Test
     void getPendingNotificationsByUserId_ReturnsOnlyUnreadNotifications() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-
         List<Notification> notificationsFromRepo = List.of(notification1, notification2);
-        when(notificationRepository
-                .findNotificationsByUserId(USER_ID_1))
+        when(notificationRepository.findNotificationsByUserId(USER_ID_1))
                 .thenReturn(notificationsFromRepo);
 
         List<Notification> result = notificationService.getPendingNotificationsByUserId(USER_ID_1);
@@ -130,8 +130,8 @@ class InMemoryNotificationImplTest {
         assertEquals(1, result.size());
         assertTrue(result.contains(notification1));
         assertFalse(result.contains(notification2));
-        verify(notificationRepository,
-                times(1)).findNotificationsByUserId(USER_ID_1);
+        verify(notificationRepository, times(1))
+                .findNotificationsByUserId(USER_ID_1);
     }
 
     @Test
@@ -156,117 +156,118 @@ class InMemoryNotificationImplTest {
                 .date(notificationToCreate.getDate())
                 .isRead(notificationToCreate.getIsRead())
                 .build();
-        when(notificationRepository.saveNotification(notificationToCreate))
-                .thenReturn(savedNotificationWithId);
+
+        when(notificationRepository.save(notificationToCreate)).thenReturn(savedNotificationWithId);
 
         Notification result = notificationService.addNotification(notificationToCreate);
 
         assertNotNull(result);
         assertEquals(savedNotificationWithId, result);
         verify(userRepository, times(1)).existsById(USER_ID_1);
-        verify(notificationRepository, times(1))
-                .saveNotification(notificationToCreate);
+        verify(notificationRepository, times(1)).save(notificationToCreate);
     }
 
     @Test
     void addNotification_ThrowsIllegalArgument_WhenNotificationIsNull() {
-        assertThrows(IllegalArgumentException.class,
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> notificationService.addNotification(null));
+        assertEquals("notification cannot be null.", exception.getMessage());
         verifyNoInteractions(userRepository, notificationRepository);
     }
 
     @Test
     void addNotification_ThrowsResourceNotFound_WhenUserDoesNotExist() {
-        when(userRepository.existsById(NON_EXISTENT_USER_ID)).thenReturn(false);
 
         Notification notificationForNonExistentUser = Notification.builder()
                 .userId(NON_EXISTENT_USER_ID)
                 .text("test")
                 .taskId(TASK_ID_1).build();
 
+        when(userRepository.existsById(NON_EXISTENT_USER_ID)).thenReturn(false);
+
         assertThrows(ResourceNotFoundException.class,
                 () -> notificationService.addNotification(notificationForNonExistentUser));
-        verify(notificationRepository, never()).saveNotification(any());
+
+        verify(notificationRepository, never()).save(any());
     }
-
-    @Test
-    void addNotification_ThrowsRuntimeException_WhenRepoThrowsDuplicate() {
-        when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(notificationRepository.saveNotification(notificationToCreate))
-                .thenThrow(new DuplicateResourceException("..."));
-
-        assertThrows(RuntimeException.class,
-                () -> notificationService.addNotification(notificationToCreate));
-    }
-
 
     // markNotificationAsRead
 
     @Test
     void markNotificationAsRead_MarksNotificationAsRead_WhenValid() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(notificationRepository.findNotificationById(NOTIFICATION_ID_1))
+
+        when(notificationRepository.findById(NOTIFICATION_ID_1))
                 .thenReturn(Optional.of(notification1));
 
-        when(notificationRepository.updateNotification(any(Notification.class)))
+        when(notificationRepository.save(any(Notification.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         notificationService.markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1);
 
         verify(notificationRepository, times(1))
-                .updateNotification(argThat(notif ->
-                notif.getNotificationId().equals(NOTIFICATION_ID_1) &&
-                        notif.getIsRead()
+                .findById(NOTIFICATION_ID_1);
+        verify(notificationRepository, times(1))
+                .save(argThat(notification ->
+                notification.getNotificationId().equals(NOTIFICATION_ID_1) &&
+                        notification.getIsRead()
         ));
     }
 
     @Test
     void markNotificationAsRead_DoesNothing_WhenAlreadyRead() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(notificationRepository.findNotificationById(NOTIFICATION_ID_2))
+        when(notificationRepository.findById(NOTIFICATION_ID_2))
                 .thenReturn(Optional.of(notification2));
 
         notificationService.markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_2);
 
-        verify(notificationRepository, never()).updateNotification(any());
+        verify(notificationRepository, times(1)).findById(NOTIFICATION_ID_2);
+        verify(notificationRepository, never()).save(any());
     }
 
     @Test
     void markNotificationAsRead_ThrowsResourceNotFound_WhenUserDoesNotExist() {
         when(userRepository.existsById(NON_EXISTENT_USER_ID)).thenReturn(false);
+
         assertThrows(ResourceNotFoundException.class,
                 () -> notificationService.markNotificationAsRead(NON_EXISTENT_USER_ID, NOTIFICATION_ID_1));
-        verify(notificationRepository, never()).findNotificationById(anyLong());
-        verify(notificationRepository, never()).updateNotification(any());
+        verify(notificationRepository, never()).findById(anyLong());
+        verify(notificationRepository, never()).save(any());
     }
 
     @Test
     void markNotificationAsRead_ThrowsResourceNotFound_WhenNotificationDoesNotExistForUser() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(notificationRepository.findNotificationById(NON_EXISTENT_NOTIFICATION_ID))
+        when(notificationRepository.findById(NON_EXISTENT_NOTIFICATION_ID))
                 .thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
-                () -> notificationService.markNotificationAsRead(USER_ID_1, NON_EXISTENT_NOTIFICATION_ID));
+                () -> notificationService
+                        .markNotificationAsRead(USER_ID_1, NON_EXISTENT_NOTIFICATION_ID));
         verify(notificationRepository, times(1))
-                .findNotificationById(NON_EXISTENT_NOTIFICATION_ID);
-        verify(notificationRepository, never()).updateNotification(any());
+                .findById(NON_EXISTENT_NOTIFICATION_ID);
+        verify(notificationRepository, never()).save(any());
     }
 
     @Test
     void markNotificationAsRead_ThrowsResourceNotFound_WhenNotificationExistsButNotForThisUser() {
-        Notification notificationOfOtherUser = notification1;
-        notificationOfOtherUser.setUserId(128L);
+        Notification notificationOfOtherUser = Notification.builder()
+                .notificationId(NOTIFICATION_ID_1)
+                .userId(USER_ID_1 + 5)
+                .taskId(TASK_ID_1)
+                .text("Other user notification")
+                .isRead(false)
+                .build();
 
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(notificationRepository.findNotificationById(NOTIFICATION_ID_1))
-                .thenReturn(Optional.of(notificationOfOtherUser));
+        when(notificationRepository.findById(NOTIFICATION_ID_1)).thenReturn(Optional.of(notificationOfOtherUser));
 
         assertThrows(ResourceNotFoundException.class,
                 () -> notificationService.markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1));
-        verify(notificationRepository, times(1))
-                .findNotificationById(NOTIFICATION_ID_1);
-        verify(notificationRepository, never()).updateNotification(any());
+        verify(notificationRepository, times(1)).findById(NOTIFICATION_ID_1);
+        verify(notificationRepository, never()).save(any());
     }
 
 }
