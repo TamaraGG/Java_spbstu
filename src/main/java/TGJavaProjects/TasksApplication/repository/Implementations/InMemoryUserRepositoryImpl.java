@@ -20,14 +20,12 @@ public class InMemoryUserRepositoryImpl implements UserRepository {
     private static final AtomicLong idCounter = new AtomicLong();
 
     @Override
-    public List<User> findAllUsers() {
+    public List<User> findAll() {
         return List.copyOf(users);
     }
 
     @Override
-    public User saveUser(User user)
-            throws IllegalArgumentException, DuplicateResourceException {
-
+    public User save(User user) {
         if (user == null) {
             throw new IllegalArgumentException("user cannot be null");
         }
@@ -42,14 +40,14 @@ public class InMemoryUserRepositoryImpl implements UserRepository {
             return user;
 
         } else {
-            Optional<User> existingUserOpt = findUserById(user.getUserId());
+            Optional<User> existingUserOpt = findById(user.getUserId());
             if (existingUserOpt.isPresent()) {
                 users.stream()
                         .filter(u -> !u.getUserId().equals(user.getUserId()))
                         .forEach(u -> {
-                            if (u.getEmail().equals(user.getEmail())) {
+                            if (u.getEmail().equalsIgnoreCase(user.getEmail())) {
                                 throw new DuplicateResourceException(
-                                        "email " + user.getEmail() + " already exists.");
+                                        "email " + user.getEmail() + " already exists for another user.");
                             }
                         });
                 users.removeIf(u -> u.getUserId().equals(user.getUserId()));
@@ -58,38 +56,42 @@ public class InMemoryUserRepositoryImpl implements UserRepository {
 
             } else {
                 throw new IllegalArgumentException(
-                        "cannot update non-existing user with id " + user.getUserId());
+                        "Cannot update non-existing user with id " + user.getUserId() + " via save.");
             }
         }
-
     }
 
     @Override
-    public Optional<User> findUserById(Long userId) {
+    public Optional<User> findById(Long userId) {
+        if (userId == null) return Optional.empty();
         return users.stream()
-                .filter(user -> user.getUserId().equals(userId))
+                .filter(user -> userId.equals(user.getUserId()))
                 .findFirst();
     }
 
     @Override
-    public boolean deleteUser(long userId) {
-        return users.removeIf(u -> u.getUserId() == userId);
+    public void deleteById(Long userId) {
+        if (userId == null) return;
+        users.removeIf(u -> userId.equals(u.getUserId()));
     }
 
     @Override
     public boolean existsById(Long userId) {
+        if (userId == null) return false;
         return users.stream()
-                .anyMatch(u -> u.getUserId().equals(userId));
+                .anyMatch(u -> userId.equals(u.getUserId()));
     }
 
     @Override
     public boolean existsByEmail(String email) {
+        if (email == null) return false;
         return users.stream()
-                .anyMatch(u -> u.getEmail().equalsIgnoreCase(email));
+                .anyMatch(u -> email.equalsIgnoreCase(u.getEmail()));
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
+        if (email == null) return Optional.empty();
         return users.stream()
                 .filter(user -> user.getEmail().equalsIgnoreCase(email))
                 .findFirst();
