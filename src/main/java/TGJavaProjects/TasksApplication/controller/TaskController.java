@@ -71,6 +71,7 @@ public class TaskController {
                 throw new IllegalArgumentException("task text cannot be empty.");
             }
             Task taskToCreate = Task.builder()
+                    .userId(userId)
                     .taskText(taskRequest.getTaskText())
                     .dueDate(taskRequest.getDueDate())
                     .build();
@@ -78,6 +79,7 @@ public class TaskController {
             Task createdTask = taskService.createTaskForUser(userId, taskToCreate);
             URI location = URI.create(String.format("/api/v1/users/%d/tasks/%d", userId, createdTask.getTaskId()));
             return ResponseEntity.created(location).body(createdTask);
+
         } catch (ResourceNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (DuplicateResourceException e) {
@@ -118,6 +120,7 @@ public class TaskController {
             @RequestBody TaskRequest taskRequest) {
         try {
             Task taskDetails = Task.builder()
+                    .userId(userId)
                     .taskText(taskRequest.getTaskText())
                     .dueDate(taskRequest.getDueDate())
                     .build();
@@ -129,6 +132,5 @@ public class TaskController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
-
 
 }
