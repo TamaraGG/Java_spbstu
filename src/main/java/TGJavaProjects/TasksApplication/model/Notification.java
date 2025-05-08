@@ -1,5 +1,6 @@
 package TGJavaProjects.TasksApplication.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,6 +46,7 @@ public class Notification {
             insertable = false, updatable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonBackReference("task-notifications")
     private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,5 +54,6 @@ public class Notification {
             insertable = false, updatable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonBackReference("user-notifications")
     private User user;
 }

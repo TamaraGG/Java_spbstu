@@ -1,5 +1,7 @@
 package TGJavaProjects.TasksApplication.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,19 +44,24 @@ public class Task {
 
     @NonNull
     @Builder.Default
+    @Column(nullable = false)
     private Boolean isDeleted = false;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id_ref", referencedColumnName = "userId",
             insertable = false, updatable = false)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonBackReference("user-tasks")
     private User user;
+
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL,
             orphanRemoval = true, fetch = FetchType.LAZY)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @Builder.Default
+    @JsonManagedReference("task-notifications")
     private List<Notification> notifications = new ArrayList<>();
 }
