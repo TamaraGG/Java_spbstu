@@ -2,84 +2,59 @@ package TGJavaProjects.TasksApplication.service.Implementations;
 
 import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
-import TGJavaProjects.TasksApplication.repository.InMemoryUserDAO;
+import TGJavaProjects.TasksApplication.repository.Implementations.InMemoryUserRepositoryImpl;
 import TGJavaProjects.TasksApplication.model.User;
+import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.UserService;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @AllArgsConstructor //для внедрения через конструктор
 public class InMemoryUserServiceImpl implements UserService {
 
-    private final InMemoryUserDAO userDAO;
+    private final UserRepository userRepository;
 
     @Override
     public List<User> findAllUsers() {
-        return userDAO.findAllUsers();
+        return userRepository.findAllUsers();
     }
 
     @Override
-    public User addUser(User user)
-            throws IllegalArgumentException, DuplicateResourceException {
-
-        if (user == null) {
-            throw new IllegalArgumentException("user cannot be null");
-        }
-//        if (user.getUserId() == null) {
-//            throw new IllegalArgumentException("user id cannot be null");
-//        }
-        try {
-            return userDAO.addUser(user);
-        } catch (DuplicateResourceException | IllegalArgumentException e) {
-            throw e;
+    public User registerUser(User user) throws DuplicateResourceException {
+        if (user == null || user.getEmail() == null) {
+            throw new IllegalArgumentException("user and email cannot be null for registration");
         }
 
+        return userRepository.saveUser(user);
     }
 
     @Override
-    public User findUserById(long userId) {
-        return userDAO.findUserById(userId)
+    public User findUserById(long userId) throws ResourceNotFoundException {
+        return userRepository.findUserById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "user " + userId + " not found"));
     }
 
     @Override
-    public User updateUser(User user)
-            throws IllegalArgumentException, ResourceNotFoundException {
-
-        if (user == null) {
-            throw new IllegalArgumentException("user cannot be null");
-        }
-//        if (user.getUserId() == null) {
-//            throw new IllegalArgumentException("user id cannot be null");
-//        }
-        if (!userDAO.existsById(user.getUserId())) {
-            throw new ResourceNotFoundException(
-                    "update error. user with id " + user.getUserId() +
-                    " not found"
-            );
-        }
-
-        return userDAO.updateUser(user)
-                .orElseThrow(() -> new RuntimeException(
-                        "update failed for user " + user.getUserId()));
+    public User loginUser(String email) throws ResourceNotFoundException {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "user with email '" + email + "' not found. Cannot login."));
     }
 
     @Override
     public void deleteUser(long userId)
-            throws ResourceNotFoundException, RuntimeException{
-        if (!userDAO.existsById(userId)) {
+            throws RuntimeException{
+        if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException(
                     "delete error. user with id " + userId +
                             " not found");
         }
 
-        boolean isDeleted = userDAO.deleteUser(userId);
+        boolean isDeleted = userRepository.deleteUser(userId);
         if (! isDeleted) {
             throw new RuntimeException("delete failed for user " + userId);
         }

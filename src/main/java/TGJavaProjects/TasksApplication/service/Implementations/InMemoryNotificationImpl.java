@@ -3,103 +3,84 @@ package TGJavaProjects.TasksApplication.service.Implementations;
 import TGJavaProjects.TasksApplication.exception.DuplicateResourceException;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
-import TGJavaProjects.TasksApplication.repository.InMemoryNotificationDAO;
-import TGJavaProjects.TasksApplication.repository.InMemoryTaskDAO;
+import TGJavaProjects.TasksApplication.repository.Implementations.InMemoryNotificationRepositoryImpl;
+import TGJavaProjects.TasksApplication.repository.Implementations.InMemoryTaskRepositoryImpl;
+import TGJavaProjects.TasksApplication.repository.NotificationRepository;
+import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class InMemoryNotificationImpl implements NotificationService {
 
-    private final InMemoryUserServiceImpl userService;
-    private final InMemoryTaskServiceImpl taskService;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
-    private final InMemoryTaskDAO taskDAO;
-    private final InMemoryNotificationDAO notificationDAO;
+    private void checkUserExists(Long userId) throws ResourceNotFoundException {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException(
+                    "user with id " + userId + " not found.");
+        }
+    }
 
     @Override
     public List<Notification> findAllNotifications() {
-        return notificationDAO.findAllNotifications();
+        return notificationRepository.findAllNotifications();
     }
 
     @Override
-    public List<Notification> findNotificationsByUserId(long userId) {
-        return List.of();
+    public List<Notification> getAllNotificationsByUserId(long userId)
+            throws ResourceNotFoundException {
+        checkUserExists(userId);
+        return notificationRepository.findNotificationsByUserId(userId);
     }
 
     @Override
-    public List<Notification> findNotificationsByTaskId(long taskId)
-        throws ResourceNotFoundException {
-
-        if (!taskDAO.existsById(taskId)) {
-            throw new ResourceNotFoundException(
-                    "cannot find notifications. task " + taskId + " not found"
-            );
-        }
-        return notificationDAO.findNotificationsByTaskId(taskId);
-
-    }
-
-    @Override
-    public Notification findNotificationById(long notificationId)
-        throws ResourceNotFoundException {
-
-        return notificationDAO.findNotificationById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "notification " + notificationId + " not found"));
+    public List<Notification> getPendingNotificationsByUserId(long userId)
+            throws ResourceNotFoundException {
+        checkUserExists(userId);
+        return notificationRepository.findNotificationsByUserId(userId).stream()
+                .filter(notification -> !notification.getIsRead())
+                .collect(Collectors.toList());
     }
 
     @Override
     public Notification addNotification(Notification notification)
-        throws ResourceNotFoundException, DuplicateResourceException, IllegalArgumentException {
-
-        if (notification == null) {
-            throw new IllegalArgumentException("notification cannot be null");
+            throws ResourceNotFoundException {
+        if (notification == null || notification.getUserId() == null || notification.getText() == null) {
+            throw new IllegalArgumentException(
+                    "notification, its userId, and text cannot be null.");
         }
-//        if (notification.getNotificationId() == null) {
-//            throw new IllegalArgumentException("notification id cannot be null");
-//        }
-//        if (notification.getTaskId() == null) {
-//            throw new IllegalArgumentException("task id cannot be null for notification");
-//        }
-//        if (notification.getText() == null || notification.getText().isBlank()) {
-//            throw new IllegalArgumentException("notification text cannot be null");
-//        }
 
-        if (!taskDAO.existsById(notification.getTaskId())) {
-            throw new ResourceNotFoundException(
-                    "cannot find notification. task " + notification.getTaskId() +
-                            "not found"
-            );
-        }
+        checkUserExists(notification.getUserId());
         try {
-            return notificationDAO.addNotification(notification);
-        } catch (DuplicateResourceException | IllegalArgumentException e) {
-            throw e;
+            return notificationRepository.saveNotification(notification);
+        } catch (DuplicateResourceException e) {
+            throw new RuntimeException(
+                    "failed to save notification due to duplication: " + e.getMessage(), e);
         }
-
     }
 
     @Override
-    public void deleteNotification(long notificationId)
-        throws  ResourceNotFoundException, RuntimeException {
+    public void markNotificationAsRead(long userId, long notificationId)
+            throws ResourceNotFoundException {
 
-        if (!notificationDAO.existsById(notificationId)) {
-            throw new ResourceNotFoundException(
-                    "delete error. notification with id " + notificationId +
-                            " not found");
+        checkUserExists(userId);
+        Notification notification = notificationRepository.findNotificationById(notificationId)
+                .filter(n -> n.getUserId().equals(userId))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "notification with id " + notificationId + " not found for user " + userId));
+
+        if (notification.getIsRead()) {
+            return;
         }
-        boolean isDeleted = notificationDAO.deleteNotification(notificationId);
-        if (! isDeleted) {
-            throw new RuntimeException(
-                    "delete failed for notification " + notificationId);
-        }
+        notification.setIsRead(true);
+        notificationRepository.updateNotification(notification);
     }
-
 
 }
