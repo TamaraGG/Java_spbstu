@@ -21,6 +21,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -160,10 +161,12 @@ class NotificationControllerTest {
     void markNotificationAsRead_ReturnsNoContent_WhenSuccessful() throws Exception {
         doNothing().when(notificationService).markNotificationAsRead(USER_ID_1, NOTIFICATION_ID_1);
 
-        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read",
+        mockMvc.perform(put("/api/v1/users/{userId}/notifications/{notificationId}/read"
+                        ,
                         USER_ID_1, NOTIFICATION_ID_1))
                 .andExpect(status().isNoContent());
-        verify(notificationService, times(1)).markNotificationAsRead(USER_ID_1,
+        verify(notificationService, times(1))
+                .markNotificationAsRead(USER_ID_1,
                 NOTIFICATION_ID_1);
     }
 

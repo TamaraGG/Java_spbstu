@@ -345,7 +345,8 @@ class TaskControllerTest {
         when(taskService.markTaskAsCompleted(USER_ID_1, NON_EXISTENT_TASK_ID))
                 .thenThrow(new ResourceNotFoundException("Task not found"));
 
-        mockMvc.perform(put("/api/v1/users/{userId}/tasks/{taskId}/complete", USER_ID_1, NON_EXISTENT_TASK_ID))
+        mockMvc.perform(put("/api/v1/users/{userId}/tasks/{taskId}/complete",
+                        USER_ID_1, NON_EXISTENT_TASK_ID))
                 .andExpect(status().isNotFound());
         verify(taskService, times(1)).markTaskAsCompleted(USER_ID_1, NON_EXISTENT_TASK_ID);
     }
