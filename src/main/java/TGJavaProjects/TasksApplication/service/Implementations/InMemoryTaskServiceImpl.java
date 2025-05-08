@@ -72,13 +72,8 @@ public class InMemoryTaskServiceImpl implements TaskService {
             throws ResourceNotFoundException, DuplicateResourceException {
         checkUserExists(userId);
 
-        if (task == null || task.getTaskText() == null || task.getTaskText().isBlank()) {
-            throw new IllegalArgumentException("task text cannot be null or empty.");
-        }
-
-        task.setUserId(userId);
-        if (task.getCreationDate() == null) {
-            task.setCreationDate(LocalDateTime.now());
+        if (task == null || task.getTaskText().isBlank()) {
+            throw new IllegalArgumentException("task text cannot be empty.");
         }
 
         task.setIsComplete(false);
@@ -87,6 +82,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
         Task createdTask = taskRepository.saveTask(task);
 
         Notification notification = Notification.builder()
+                .taskId(createdTask.getTaskId())
                 .userId(userId)
                 .text("New task created: " + createdTask.getTaskText())
                 .date(LocalDateTime.now())
@@ -124,7 +120,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
         checkUserExists(userId);
         Task existingTask = findTaskById(userId, taskId);
 
-        if (taskDetails.getTaskText() != null && !taskDetails.getTaskText().isBlank()) {
+        if (!taskDetails.getTaskText().isBlank()) {
             existingTask.setTaskText(taskDetails.getTaskText());
         }
         if (taskDetails.getDueDate() != null) {

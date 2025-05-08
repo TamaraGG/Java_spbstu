@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-@AllArgsConstructor //для внедрения через конструктор
+@AllArgsConstructor
 public class InMemoryUserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -24,8 +24,8 @@ public class InMemoryUserServiceImpl implements UserService {
 
     @Override
     public User registerUser(User user) throws DuplicateResourceException {
-        if (user == null || user.getEmail() == null) {
-            throw new IllegalArgumentException("user and email cannot be null for registration");
+        if (user == null) {
+            throw new IllegalArgumentException("user cannot be null for registration");
         }
 
         return userRepository.saveUser(user);

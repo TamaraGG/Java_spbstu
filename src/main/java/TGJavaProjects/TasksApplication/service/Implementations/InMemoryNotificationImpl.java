@@ -52,9 +52,9 @@ public class InMemoryNotificationImpl implements NotificationService {
     @Override
     public Notification addNotification(Notification notification)
             throws ResourceNotFoundException {
-        if (notification == null || notification.getUserId() == null || notification.getText() == null) {
+        if (notification == null) {
             throw new IllegalArgumentException(
-                    "notification, its userId, and text cannot be null.");
+                    "notification cannot be null.");
         }
 
         checkUserExists(notification.getUserId());
