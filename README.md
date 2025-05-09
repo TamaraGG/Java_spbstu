@@ -1,6 +1,6 @@
-## Step 5: Switch to a database(PostgreSQL, MongoDB, Cassandra, InfluxDB, Firebase, Clickhouse…)
-- Replace H2 with PostgreSQL.
-- Update application.properties for PostgreSQL connection.
-- Use Flyway for database migrations.
-- Write new tests. Use mockito to mock responses from the database.
+## Step 6: Implement Caching (Redis, Valkey, Dragonfly, Memcached or any other, but consult with your teacher!)
+- Use Spring Cache.
+- Cache task retrieval to improve performance.
+- Search for entries in Caching database, and if not found, then search in database
+- Set timeouts for values
 
