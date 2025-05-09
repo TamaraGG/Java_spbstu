@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-@Profile("h2")
+@Profile({"h2", "pg"})
 public interface UserJpaRepository extends UserRepository, JpaRepository<User, Long> {
     boolean existsByEmailIgnoreCase(String email);
     Optional<User> findByEmailIgnoreCase(String email);

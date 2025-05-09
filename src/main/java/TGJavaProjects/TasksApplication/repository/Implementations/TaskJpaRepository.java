@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-@Profile("h2")
+@Profile({"h2", "pg"})
 public interface TaskJpaRepository extends TaskRepository, JpaRepository<Task, Long> {
     @Override
     List<Task> findByUserIdAndIsDeletedFalse(Long userId);
