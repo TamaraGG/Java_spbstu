@@ -71,7 +71,10 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    @CacheEvict(cacheNames = "userTasksCache", key = "#userId", beforeInvocation = false)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+            @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+    })
     public Task createTaskForUser(long userId, Task task)
             throws ResourceNotFoundException {
         checkUserExists(userId);
@@ -111,8 +114,13 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    @CachePut(cacheNames = "taskCache", key = "#taskId")
-    @CacheEvict(cacheNames = "userTasksCache", allEntries = true, beforeInvocation = false)
+    @Caching(
+            put = @CachePut(cacheNames = "taskCache", key = "#taskId"),
+            evict = {
+                    @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+                    @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+            }
+    )
     public Task markTaskAsCompleted(long userId, long taskId) throws ResourceNotFoundException {
         checkUserExists(userId);
         Task task = findTaskById(userId, taskId);
@@ -125,8 +133,13 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    @CachePut(cacheNames = "taskCache", key = "#taskId")
-    @CacheEvict(cacheNames = "userTasksCache", allEntries = true, beforeInvocation = false)
+    @Caching(
+            put = @CachePut(cacheNames = "taskCache", key = "#taskId"),
+            evict = {
+                    @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+                    @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+            }
+    )
     public Task updateTaskDetails(long userId, long taskId, Task taskDetails) throws ResourceNotFoundException {
         checkUserExists(userId);
         Task existingTask = findTaskById(userId, taskId);
