@@ -1,17 +1,22 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.event.TaskCreatedEvent; // Импорт вашего DTO
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
-import TGJavaProjects.TasksApplication.model.Notification;
+import TGJavaProjects.TasksApplication.model.Notification; // Остается для других тестов, если нужно
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
-import TGJavaProjects.TasksApplication.service.NotificationService;
+// import TGJavaProjects.TasksApplication.service.NotificationService; // Больше не нужен как прямой мок для createTask
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate; // Импорт KafkaTemplate
+import org.springframework.test.util.ReflectionTestUtils; // Для установки значения @Value
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,8 +35,17 @@ class InMemoryTaskServiceImplTest {
     private TaskRepository taskRepository;
     @Mock
     private UserRepository userRepository;
+    // @Mock
+    // private NotificationService notificationService; // Убираем мок NotificationService
     @Mock
-    private NotificationService notificationService;
+    private KafkaTemplate<String, TaskCreatedEvent> kafkaTemplate; // Добавляем мок KafkaTemplate
+
+    @Captor
+    private ArgumentCaptor<TaskCreatedEvent> taskCreatedEventCaptor;
+    @Captor
+    private ArgumentCaptor<String> topicCaptor;
+    @Captor
+    private ArgumentCaptor<Task> taskArgumentCaptor; // Для проверки сохраненной задачи
 
     private Task task1, task2, task1Completed, task1Deleted;
     private Task taskToCreate;
@@ -44,10 +58,14 @@ class InMemoryTaskServiceImplTest {
     private static final LocalDateTime NOW = LocalDateTime.now();
     private static final String TASK_TEXT_1 = "Task 1 Text";
     private static final String TASK_TEXT_NEW = "New Task Text";
+    private static final String KAFKA_TOPIC_NAME = "task-creations-topic"; // Имя топика для теста
 
 
     @BeforeEach
     void setUp() {
+        // Устанавливаем значение поля taskCreatedTopic, которое обычно инжектится через @Value
+        ReflectionTestUtils.setField(taskService, "taskCreatedTopic", KAFKA_TOPIC_NAME);
+
         taskToCreate = Task.builder()
                 .userId(USER_ID_1)
                 .taskText(TASK_TEXT_NEW)
@@ -95,7 +113,7 @@ class InMemoryTaskServiceImplTest {
                 .build();
     }
 
-    // findAllTasks
+    // findAllTasks - без изменений
 
     @Test
     void findAllTasks_ReturnsListOfNonDeletedTasks() {
@@ -108,7 +126,7 @@ class InMemoryTaskServiceImplTest {
         verify(taskRepository, times(1)).findByIsDeletedFalse();
     }
 
-    // findTaskById
+    // findTaskById - без изменений
 
     @Test
     void findTaskById_ReturnsTask_WhenUserAndTaskExistAndTaskBelongsToUserAndNotDeleted() {
@@ -174,7 +192,7 @@ class InMemoryTaskServiceImplTest {
         verify(taskRepository, times(1)).findByTaskIdAndIsDeletedFalse(TASK_ID_1);
     }
 
-    // getAllTasksByUserId
+    // getAllTasksByUserId - без изменений
 
     @Test
     void getAllTasksByUserId_ReturnsNonDeletedTasksForUser() {
@@ -198,7 +216,7 @@ class InMemoryTaskServiceImplTest {
         verify(taskRepository, never()).findByUserIdAndIsDeletedFalse(anyLong());
     }
 
-    // getPendingTasksByUserId
+    // getPendingTasksByUserId - без изменений
 
     @Test
     void getPendingTasksByUserId_ReturnsOnlyPendingAndNonDeletedTasks() {
@@ -222,25 +240,24 @@ class InMemoryTaskServiceImplTest {
         verify(taskRepository, never()).findByUserIdAndIsDeletedFalse(anyLong());
     }
 
-    // createTaskForUser
+    // createTaskForUser - ИЗМЕНЕНИЯ ЗДЕСЬ
 
     @Test
-    void createTaskForUser_CreatesTaskAndNotification_WhenValid() {
+    void createTaskForUser_SavesTaskAndSendsKafkaEvent_WhenValid() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
         Task savedTaskWithId = Task.builder()
-                .taskId(TASK_ID_1)
+                .taskId(TASK_ID_1) // Присваиваем ID, как будто он был сгенерирован БД
                 .userId(USER_ID_1)
                 .taskText(taskToCreate.getTaskText())
                 .dueDate(taskToCreate.getDueDate())
-                .creationDate(NOW)
+                .creationDate(NOW) // Предполагаем, что дата создания устанавливается
                 .isComplete(false)
                 .isDeleted(false)
                 .build();
+        // Мокируем taskRepository.save() так, чтобы он возвращал задачу с ID
         when(taskRepository.save(any(Task.class))).thenReturn(savedTaskWithId);
-
-        when(notificationService.addNotification(any(Notification.class)))
-                .thenReturn(mock(Notification.class));
-
+        // Мокируем kafkaTemplate.send() - для простоты, не проверяем возвращаемое значение (Future)
+        // Если бы send возвращал что-то важное или мог бросить проверяемое исключение, мокировали бы иначе.
 
         Task result = taskService.createTaskForUser(USER_ID_1, taskToCreate);
 
@@ -249,23 +266,28 @@ class InMemoryTaskServiceImplTest {
         assertEquals(USER_ID_1, result.getUserId());
         assertFalse(result.getIsComplete());
         assertFalse(result.getIsDeleted());
-        assertNotNull(result.getCreationDate());
+        assertNotNull(result.getCreationDate()); // Проверяем, что дата создания не null
 
         verify(userRepository, times(1)).existsById(USER_ID_1);
-        verify(taskRepository, times(1)).save(argThat(task ->
-                task.getUserId().equals(USER_ID_1) &&
-                        task.getTaskText().equals(taskToCreate.getTaskText()) &&
-                        !task.getIsComplete() &&
-                        !task.getIsDeleted()
-        ));
+        verify(taskRepository, times(1)).save(taskArgumentCaptor.capture());
+        Task capturedTaskToSave = taskArgumentCaptor.getValue();
+        assertEquals(USER_ID_1, capturedTaskToSave.getUserId());
+        assertEquals(taskToCreate.getTaskText(), capturedTaskToSave.getTaskText());
+        assertFalse(capturedTaskToSave.getIsComplete());
+        assertFalse(capturedTaskToSave.getIsDeleted());
+        // taskToCreate не имеет ID, creationDate, isComplete, isDeleted - они устанавливаются в сервисе
 
-        verify(notificationService, times(1))
-                .addNotification(argThat(notification ->
-                        notification.getUserId().equals(USER_ID_1) &&
-                                notification.getTaskId().equals(savedTaskWithId.getTaskId()) &&
-                                notification.getText().contains(savedTaskWithId.getTaskText()) &&
-                                !notification.getIsRead()
-                ));
+        // Проверяем вызов kafkaTemplate.send()
+        verify(kafkaTemplate, times(1)).send(topicCaptor.capture(), taskCreatedEventCaptor.capture());
+        assertEquals(KAFKA_TOPIC_NAME, topicCaptor.getValue());
+        TaskCreatedEvent capturedEvent = taskCreatedEventCaptor.getValue();
+        assertNotNull(capturedEvent);
+        assertEquals(savedTaskWithId.getTaskId(), capturedEvent.getTaskId());
+        assertEquals(savedTaskWithId.getUserId(), capturedEvent.getUserId());
+        assertEquals(savedTaskWithId.getTaskText(), capturedEvent.getTaskText());
+
+        // Убеждаемся, что NotificationService НЕ вызывался напрямую
+        // verify(notificationService, never()).addNotification(any(Notification.class)); // Этого мока больше нет
     }
 
     @Test
@@ -274,19 +296,21 @@ class InMemoryTaskServiceImplTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> taskService.createTaskForUser(NON_EXISTENT_USER_ID, taskToCreate));
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        // verify(notificationService, never()).addNotification(any()); // Мока нет
+        verify(kafkaTemplate, never()).send(anyString(), any(TaskCreatedEvent.class)); // Kafka не должен вызываться
     }
 
     @Test
     void createTaskForUser_ThrowsIllegalArgumentException_WhenTaskIsNull() {
-        when(userRepository.existsById(USER_ID_1)).thenReturn(true);
+        when(userRepository.existsById(USER_ID_1)).thenReturn(true); // Пользователь существует
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> taskService.createTaskForUser(USER_ID_1, null)
         );
         assertEquals("task text cannot be empty.", exception.getMessage());
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        // verify(notificationService, never()).addNotification(any()); // Мока нет
+        verify(kafkaTemplate, never()).send(anyString(), any(TaskCreatedEvent.class));
     }
 
     @Test
@@ -299,7 +323,8 @@ class InMemoryTaskServiceImplTest {
         );
         assertEquals("task text cannot be empty.", exception.getMessage());
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        // verify(notificationService, never()).addNotification(any()); // Мока нет
+        verify(kafkaTemplate, never()).send(anyString(), any(TaskCreatedEvent.class));
     }
 
     @Test
@@ -312,10 +337,11 @@ class InMemoryTaskServiceImplTest {
         );
         assertEquals("task text cannot be empty.", exception.getMessage());
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        // verify(notificationService, never()).addNotification(any()); // Мока нет
+        verify(kafkaTemplate, never()).send(anyString(), any(TaskCreatedEvent.class));
     }
 
-    // softDeleteTask
+    // softDeleteTask - без изменений
 
     @Test
     void softDeleteTask_MarksTaskAsDeleted() {
@@ -347,7 +373,7 @@ class InMemoryTaskServiceImplTest {
     }
 
 
-    // markTaskAsCompleted
+    // markTaskAsCompleted - без изменений
 
     @Test
     void markTaskAsCompleted_MarksTaskAsComplete() {
@@ -371,7 +397,7 @@ class InMemoryTaskServiceImplTest {
     @Test
     void markTaskAsCompleted_ThrowsIllegalState_WhenTaskAlreadyCompleted() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_2)).thenReturn(Optional.of(task2));
+        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_2)).thenReturn(Optional.of(task2)); // task2 is already complete
 
         assertThrows(IllegalStateException.class,
                 () -> taskService.markTaskAsCompleted(USER_ID_1, TASK_ID_2));
@@ -380,20 +406,26 @@ class InMemoryTaskServiceImplTest {
     }
 
 
-    // updateTaskDetails
+    // updateTaskDetails - без изменений
 
     @Test
     void updateTaskDetails_UpdatesTextAndDueDate() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
+        // Создаем копию task1, чтобы изменения в тесте не влияли на другие тесты
+        Task originalTaskCopy = Task.builder()
+                .taskId(task1.getTaskId()).userId(task1.getUserId()).taskText(task1.getTaskText())
+                .creationDate(task1.getCreationDate()).dueDate(task1.getDueDate())
+                .isComplete(task1.getIsComplete()).isDeleted(task1.getIsDeleted()).build();
+
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1))
-                .thenReturn(Optional.of(task1));
+                .thenReturn(Optional.of(originalTaskCopy));
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Task detailsToUpdate = Task.builder()
                 .taskText("Updated Details Text")
                 .dueDate(NOW.plusDays(10))
-                .userId(USER_ID_1)
+                .userId(USER_ID_1) // userId в detailsToUpdate не используется сервисом, но для полноты
                 .build();
 
         Task result = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsToUpdate);
@@ -401,9 +433,9 @@ class InMemoryTaskServiceImplTest {
         assertNotNull(result);
         assertEquals("Updated Details Text", result.getTaskText());
         assertEquals(detailsToUpdate.getDueDate(), result.getDueDate());
-        assertEquals(task1.getUserId(), result.getUserId());
-        assertEquals(task1.getIsComplete(), result.getIsComplete());
-        assertEquals(task1.getIsDeleted(), result.getIsDeleted());
+        assertEquals(originalTaskCopy.getUserId(), result.getUserId());
+        assertEquals(originalTaskCopy.getIsComplete(), result.getIsComplete());
+        assertEquals(originalTaskCopy.getIsDeleted(), result.getIsDeleted());
 
         verify(taskRepository, times(1))
                 .findByTaskIdAndIsDeletedFalse(TASK_ID_1);
@@ -426,32 +458,39 @@ class InMemoryTaskServiceImplTest {
                 .dueDate(task1.getDueDate())
                 .isComplete(task1.getIsComplete()).isDeleted(task1.getIsDeleted()).build();
 
+        // Мокируем возвращение копии, чтобы избежать модификации состояния между вызовами
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1))
-                .thenReturn(Optional.of(originalTask));
+                .thenReturn(Optional.of(Task.builder() // Первая копия
+                        .taskId(originalTask.getTaskId()).userId(originalTask.getUserId())
+                        .taskText(originalTask.getTaskText()).creationDate(originalTask.getCreationDate())
+                        .dueDate(originalTask.getDueDate()).isComplete(originalTask.getIsComplete())
+                        .isDeleted(originalTask.getIsDeleted()).build()));
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Task detailsWithOnlyText = Task.builder()
                 .taskText("Only Text Updated")
-                .userId(USER_ID_1).build();
+                .userId(USER_ID_1) // userId в detailsToUpdate не используется сервисом
+                .build(); // dueDate is null
 
         Task result1 = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsWithOnlyText);
         assertEquals("Only Text Updated", result1.getTaskText());
-        assertEquals(originalTask.getDueDate(), result1.getDueDate());
+        assertEquals(originalTask.getDueDate(), result1.getDueDate()); // DueDate должен остаться прежним
 
+        // Мокируем возвращение обновленной задачи для следующего шага
         Task taskAfterTextUpdate = Task.builder()
-                .taskId(task1.getTaskId()).userId(task1.getUserId()).taskText("Only Text Updated")
-                .creationDate(task1.getCreationDate()).dueDate(task1.getDueDate())
-                .isComplete(task1.getIsComplete()).isDeleted(task1.getIsDeleted()).build();
+                .taskId(originalTask.getTaskId()).userId(originalTask.getUserId()).taskText("Only Text Updated")
+                .creationDate(originalTask.getCreationDate()).dueDate(originalTask.getDueDate()) // Старая dueDate
+                .isComplete(originalTask.getIsComplete()).isDeleted(originalTask.getIsDeleted()).build();
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1)).thenReturn(Optional.of(taskAfterTextUpdate));
 
         Task detailsWithOnlyDueDate = Task.builder()
                 .dueDate(NOW.plusMonths(1))
-                .taskText(taskAfterTextUpdate.getTaskText())
+                .taskText("") // Пустой текст, чтобы проверить, что он не обновится, если пустой
                 .userId(USER_ID_1).build();
 
         Task result2 = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsWithOnlyDueDate);
-        assertEquals("Only Text Updated", result2.getTaskText());
-        assertEquals(detailsWithOnlyDueDate.getDueDate(), result2.getDueDate());
+        assertEquals("Only Text Updated", result2.getTaskText()); // Текст должен остаться от предыдущего обновления
+        assertEquals(detailsWithOnlyDueDate.getDueDate(), result2.getDueDate()); // DueDate должен обновиться
     }
 }

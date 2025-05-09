@@ -1,31 +1,36 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.event.TaskCreatedEvent; // Import the new event
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
-import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
-import TGJavaProjects.TasksApplication.service.NotificationService;
+// NotificationService import is no longer needed here for addNotification
 import TGJavaProjects.TasksApplication.service.TaskService;
+import lombok.RequiredArgsConstructor; // Changed from AllArgsConstructor for selective injection
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.transaction.annotation.Transactional;
-import lombok.AllArgsConstructor;
-import org.springframework.context.annotation.Profile;
+import org.springframework.kafka.core.KafkaTemplate; // Import KafkaTemplate
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor // Use RequiredArgsConstructor for final fields
 public class InMemoryTaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    // private final NotificationService notificationService; // Remove this direct dependency for addNotification
+    private final KafkaTemplate<String, TaskCreatedEvent> kafkaTemplate; // Inject KafkaTemplate
+
+    @Value("${kafka.topic.task.created:task-creations-topic}") // Define topic name in properties or use default
+    private String taskCreatedTopic;
 
     private void checkUserExists(long userId) throws ResourceNotFoundException {
         if (!userRepository.existsById(userId)) {
@@ -88,12 +93,30 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
         Task createdTask = taskRepository.save(task);
 
-        Notification notification = Notification.builder()
-                .taskId(createdTask.getTaskId())
-                .userId(userId)
-                .text("New task created: " + createdTask.getTaskText())
-                .build();
-        notificationService.addNotification(notification);
+        // Create an event DTO
+        TaskCreatedEvent event = new TaskCreatedEvent(
+                createdTask.getTaskId(),
+                createdTask.getUserId(),
+                createdTask.getTaskText()
+        );
+
+        // Send the event to Kafka
+        try {
+            kafkaTemplate.send(taskCreatedTopic, event);
+            System.out.println("Sent task creation event to Kafka: " + event); // For debugging
+        } catch (Exception e) {
+            // Log error, handle exception (e.g., retry, DLQ - for simplicity, just logging now)
+            System.err.println("Error sending task creation event to Kafka: " + e.getMessage());
+            // Depending on requirements, you might re-throw or handle differently
+        }
+
+        // The direct call to notificationService.addNotification is removed.
+        // Notification notification = Notification.builder()
+        // .taskId(createdTask.getTaskId())
+        // .userId(userId)
+        // .text("New task created: " + createdTask.getTaskText())
+        // .build();
+        // notificationService.addNotification(notification);
 
         return createdTask;
     }
@@ -147,7 +170,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
         if (taskDetails.getDueDate() != null) {
             existingTask.setDueDate(taskDetails.getDueDate());
         }
-        if (!taskDetails.getTaskText().isBlank()) {
+        if (taskDetails.getTaskText() != null && !taskDetails.getTaskText().isBlank()) {
             existingTask.setTaskText(taskDetails.getTaskText());
         }
 

@@ -1,6 +1,45 @@
 version: '3.8'
 
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1 # Or any other Zookeeper image
+    container_name: zookeeper
+    networks:
+      - tasks-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1 # Or any other Kafka image
+    container_name: kafka
+    networks:
+      - tasks-net
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092" # For external access if needed, not strictly necessary for app-to-kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092 # For internal and external
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1 # Confluent specific
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1 # Confluent specific
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s # Give Kafka more time to start
+
   db:
     image: postgres:15-alpine
     container_name: tasks-postgres-db
@@ -47,6 +86,11 @@ services:
       SPRING_FLYWAY_ENABLED: true
       SPRING_DATA_REDIS_HOST: cache
       SPRING_DATA_REDIS_PORT: 6379
+
+      # Kafka broker for the application
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_TASK_CREATED: ${KAFKA_TOPIC_TASK_CREATED:-task-creations-topic} # Use env var or default
+
     networks:
       - tasks-net
     depends_on:
@@ -54,6 +98,9 @@ services:
         condition: service_healthy
       cache:
         condition: service_started
+      kafka: # Add dependency on Kafka
+        condition: service_healthy # Wait for Kafka to be healthy
+    restart: on-failure
 
 networks:
   tasks-net:
