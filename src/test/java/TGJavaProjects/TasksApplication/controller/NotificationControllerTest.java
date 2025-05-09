@@ -122,7 +122,8 @@ class NotificationControllerTest {
         mockMvc.perform(get("/api/v1/users/{userId}/notifications", NON_EXISTENT_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
-        verify(notificationService, times(1)).getAllNotificationsByUserId(NON_EXISTENT_USER_ID);
+        verify(notificationService, times(1))
+                .getAllNotificationsByUserId(NON_EXISTENT_USER_ID);
     }
 
     // getPendingUserNotifications

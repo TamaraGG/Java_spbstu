@@ -1,19 +1,18 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
-import TGJavaProjects.TasksApplication.event.TaskCreatedEvent; // Import the new event
+import TGJavaProjects.TasksApplication.event.TaskCreatedEvent;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
-// NotificationService import is no longer needed here for addNotification
 import TGJavaProjects.TasksApplication.service.TaskService;
-import lombok.RequiredArgsConstructor; // Changed from AllArgsConstructor for selective injection
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.kafka.core.KafkaTemplate; // Import KafkaTemplate
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,15 +20,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor // Use RequiredArgsConstructor for final fields
+@RequiredArgsConstructor
 public class InMemoryTaskServiceImpl implements TaskService {
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    // private final NotificationService notificationService; // Remove this direct dependency for addNotification
-    private final KafkaTemplate<String, TaskCreatedEvent> kafkaTemplate; // Inject KafkaTemplate
+    private final KafkaTemplate<String, TaskCreatedEvent> kafkaTemplate;
 
-    @Value("${kafka.topic.task.created:task-creations-topic}") // Define topic name in properties or use default
+    @Value("${kafka.topic.task.created:task-creations-topic}")
+
     private String taskCreatedTopic;
 
     private void checkUserExists(long userId) throws ResourceNotFoundException {
@@ -93,30 +92,18 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
         Task createdTask = taskRepository.save(task);
 
-        // Create an event DTO
         TaskCreatedEvent event = new TaskCreatedEvent(
                 createdTask.getTaskId(),
                 createdTask.getUserId(),
                 createdTask.getTaskText()
         );
 
-        // Send the event to Kafka
         try {
             kafkaTemplate.send(taskCreatedTopic, event);
-            System.out.println("Sent task creation event to Kafka: " + event); // For debugging
+            System.out.println("Sent task creation event to Kafka: " + event);
         } catch (Exception e) {
-            // Log error, handle exception (e.g., retry, DLQ - for simplicity, just logging now)
             System.err.println("Error sending task creation event to Kafka: " + e.getMessage());
-            // Depending on requirements, you might re-throw or handle differently
         }
-
-        // The direct call to notificationService.addNotification is removed.
-        // Notification notification = Notification.builder()
-        // .taskId(createdTask.getTaskId())
-        // .userId(userId)
-        // .text("New task created: " + createdTask.getTaskText())
-        // .build();
-        // notificationService.addNotification(notification);
 
         return createdTask;
     }
