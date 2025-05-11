@@ -17,7 +17,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     public CompletableFuture<Void> recordTaskCompletionEvent(Task completedTask) {
         log.info("ASYNC: Starting to record task completion event for taskId: {}", completedTask.getTaskId());
         try {
-            // Имитация долгой операции
+
             TimeUnit.SECONDS.sleep(5);
             log.info("ASYNC: Task completion event recorded for taskId: {}, userId: {}, text: '{}'",
                     completedTask.getTaskId(), completedTask.getUserId(), completedTask.getTaskText());
