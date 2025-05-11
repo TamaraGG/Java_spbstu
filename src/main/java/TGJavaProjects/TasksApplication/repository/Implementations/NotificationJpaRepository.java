@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-@Profile("h2")
+@Profile({"h2", "pg"})
 public interface NotificationJpaRepository
         extends NotificationRepository, JpaRepository<Notification, Long> {
     @Override

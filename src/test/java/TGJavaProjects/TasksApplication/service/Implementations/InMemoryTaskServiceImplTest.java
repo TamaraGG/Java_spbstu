@@ -455,4 +455,3 @@ class InMemoryTaskServiceImplTest {
         assertEquals(detailsWithOnlyDueDate.getDueDate(), result2.getDueDate());
     }
 }
-

@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+/.env
+
+*.log
+logs/
+
+.mvn/
+
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+*.DS_Store

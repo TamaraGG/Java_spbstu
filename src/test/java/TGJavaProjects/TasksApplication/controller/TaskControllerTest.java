@@ -387,7 +387,7 @@ class TaskControllerTest {
                 .updateTaskDetails(eq(USER_ID_1), eq(TASK_ID_1), argThat(task ->
                         task.getTaskText().equals(updateRequest.getTaskText()) &&
                                 task.getDueDate().equals(updateRequest.getDueDate())
-        ));
+                ));
     }
 
     @Test
