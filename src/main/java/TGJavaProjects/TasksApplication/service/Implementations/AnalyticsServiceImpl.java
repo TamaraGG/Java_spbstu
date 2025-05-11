@@ -1,6 +1,7 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
 import TGJavaProjects.TasksApplication.model.Task;
+import TGJavaProjects.TasksApplication.service.AnalyticsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,9 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-public class AnalyticsService {
+public class AnalyticsServiceImpl implements AnalyticsService {
 
-    @Async // Помечаем метод как асинхронный
+    @Async
     public CompletableFuture<Void> recordTaskCompletionEvent(Task completedTask) {
         log.info("ASYNC: Starting to record task completion event for taskId: {}", completedTask.getTaskId());
         try {
@@ -24,10 +25,9 @@ public class AnalyticsService {
             log.error("ASYNC: Recording task completion was interrupted for taskId: {}", completedTask.getTaskId(), e);
             Thread.currentThread().interrupt();
         }
-        return CompletableFuture.completedFuture(null); // Возвращаем CompletableFuture для асинхронных методов
+        return CompletableFuture.completedFuture(null);
     }
 
-    // Можно добавить еще один асинхронный метод, если нужно
     @Async
     public void performSomeOtherBackgroundTask(String data) {
         log.info("ASYNC: Starting some other background task with data: {}", data);
