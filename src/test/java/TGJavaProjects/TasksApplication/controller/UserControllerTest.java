@@ -116,7 +116,8 @@ class UserControllerTest {
 
     @Test
     void registerUser_ReturnsBadRequest_WhenEmailIsNull() throws Exception {
-        UserRegistrationRequest invalidRequest = new UserRegistrationRequest(null, "Test", "User");
+        UserRegistrationRequest invalidRequest
+                = new UserRegistrationRequest(null, "Test", "User");
 
         mockMvc.perform(post("/api/v1/users/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -130,7 +131,8 @@ class UserControllerTest {
 
     @Test
     void registerUser_ReturnsBadRequest_WhenEmailIsBlank() throws Exception {
-        UserRegistrationRequest invalidRequest = new UserRegistrationRequest(" ", "Test", "User");
+        UserRegistrationRequest invalidRequest =
+                new UserRegistrationRequest(" ", "Test", "User");
 
         mockMvc.perform(post("/api/v1/users/register")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -32,38 +32,6 @@ public class UserController {
 
     private final UserService userService;
 
-//    @GetMapping
-//    public List<User> getAllUsers() {
-//        return userService.findAllUsers();
-//    }
-//
-//    @GetMapping("/{id}")
-//    public ResponseEntity<User> getUserById(@PathVariable("id") long userId)
-//        throws ResourceNotFoundException {
-//
-//        try {
-//            User user = userService.findUserById(userId);
-//            return ResponseEntity.ok(user);
-//
-//        } catch (ResourceNotFoundException e) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
-//        }
-//    }
-//
-//
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<Void> deleteUser(@PathVariable("id") long userId)
-//        throws ResourceNotFoundException {
-//
-//        try {
-//            userService.deleteUser(userId);
-//            return ResponseEntity.noContent().build();
-//        } catch (ResourceNotFoundException e) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);;
-//        }
-//    }
-
-
     @PostMapping("/register")
     public ResponseEntity<User> registerUser(@RequestBody UserRegistrationRequest registrationRequest) {
         try {
