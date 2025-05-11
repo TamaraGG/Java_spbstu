@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  tasks-app:
+    build: .
+    container_name: tasks-application-container
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=h2
+    networks:
+      - tasks-net
+networks:
+  tasks-net:
+    driver: bridge

@@ -9,6 +9,7 @@ import TGJavaProjects.TasksApplication.service.NotificationService;
 import TGJavaProjects.TasksApplication.service.TaskService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
