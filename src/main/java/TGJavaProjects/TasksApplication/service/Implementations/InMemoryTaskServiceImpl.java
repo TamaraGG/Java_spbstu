@@ -7,12 +7,13 @@ import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.TaskService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +24,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InMemoryTaskServiceImpl implements TaskService {
 
+    private static final Logger log = LoggerFactory.getLogger(InMemoryTaskServiceImpl.class);
+
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
-    private final KafkaTemplate<String, TaskCreatedEvent> kafkaTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Value("${kafka.topic.task.created:task-creations-topic}")
-
-    private String taskCreatedTopic;
 
     private void checkUserExists(long userId) throws ResourceNotFoundException {
         if (!userRepository.existsById(userId)) {
@@ -83,14 +83,15 @@ public class InMemoryTaskServiceImpl implements TaskService {
             throws ResourceNotFoundException {
         checkUserExists(userId);
 
-        if (task == null || task.getTaskText().isBlank()) {
-            throw new IllegalArgumentException("task text cannot be empty.");
+        if (task == null || task.getTaskText() == null || task.getTaskText().isBlank()) {
+            throw new IllegalArgumentException("task text cannot be null or empty.");
         }
         task.setUserId(userId);
         task.setIsComplete(false);
         task.setIsDeleted(false);
 
         Task createdTask = taskRepository.save(task);
+        log.debug("Task saved with ID: {}", createdTask.getTaskId());
 
         TaskCreatedEvent event = new TaskCreatedEvent(
                 createdTask.getTaskId(),
@@ -99,10 +100,13 @@ public class InMemoryTaskServiceImpl implements TaskService {
         );
 
         try {
-            kafkaTemplate.send(taskCreatedTopic, event);
-            System.out.println("Sent task creation event to Kafka: " + event);
+            eventPublisher.publishEvent(event);
+
+            log.info("Published Spring event for task creation: {}", event);
         } catch (Exception e) {
-            System.err.println("Error sending task creation event to Kafka: " + e.getMessage());
+
+            log.error("Error publishing Spring event for task creation: {}", event, e);
+
         }
 
         return createdTask;
@@ -120,6 +124,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
         Task task = findTaskById(userId, taskId);
         task.setIsDeleted(true);
         taskRepository.save(task);
+        log.info("Task with ID: {} for user ID: {} marked as deleted.", taskId, userId);
     }
 
     @Override
@@ -135,10 +140,13 @@ public class InMemoryTaskServiceImpl implements TaskService {
         checkUserExists(userId);
         Task task = findTaskById(userId, taskId);
         if (task.getIsComplete()) {
+            log.warn("Attempted to mark already completed task with ID: {} as completed.", taskId);
             throw new IllegalStateException("task " + taskId + " is already completed.");
         }
         task.setIsComplete(true);
-        return taskRepository.save(task);
+        Task updatedTask = taskRepository.save(task);
+        log.info("Task with ID: {} for user ID: {} marked as completed.", taskId, userId);
+        return updatedTask;
     }
 
     @Override
@@ -154,13 +162,23 @@ public class InMemoryTaskServiceImpl implements TaskService {
         checkUserExists(userId);
         Task existingTask = findTaskById(userId, taskId);
 
+        boolean updated = false;
         if (taskDetails.getDueDate() != null) {
             existingTask.setDueDate(taskDetails.getDueDate());
+            updated = true;
         }
-        if (taskDetails.getTaskText() != null && !taskDetails.getTaskText().isBlank()) {
+        if (!taskDetails.getTaskText().isBlank()) {
             existingTask.setTaskText(taskDetails.getTaskText());
+            updated = true;
         }
 
-        return taskRepository.save(existingTask);
+        if (updated) {
+            Task savedTask = taskRepository.save(existingTask);
+            log.info("Task details updated for task ID: {} for user ID: {}", taskId, userId);
+            return savedTask;
+        } else {
+            log.info("No details to update for task ID: {} for user ID: {}", taskId, userId);
+            return existingTask;
+        }
     }
 }
