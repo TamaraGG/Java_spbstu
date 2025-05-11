@@ -1,5 +1,8 @@
 package TGJavaProjects.TasksApplication.service;
 
-public interface TaskMaintenanceService {
+import org.springframework.stereotype.Service;
+
+@Service
+public interface TaskSchedulerService {
     void checkForOverdueTasks();
 }
