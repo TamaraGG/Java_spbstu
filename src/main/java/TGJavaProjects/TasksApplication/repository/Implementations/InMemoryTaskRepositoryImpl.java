@@ -94,4 +94,12 @@ public class InMemoryTaskRepositoryImpl implements TaskRepository {
         return tasks.stream()
                 .anyMatch(t -> taskId.equals(t.getTaskId()) && !t.getIsDeleted());
     }
+
+    @Override
+    public List<Task> findByIsDeletedFalseAndIsCompleteFalse() {
+        return tasks.stream()
+                .filter(task -> !task.getIsDeleted() && !task.getIsComplete())
+                .collect(Collectors.toList());
+    }
+
 }

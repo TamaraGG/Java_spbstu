@@ -14,4 +14,6 @@ public interface TaskRepository {
     List<Task> findByIsDeletedFalse();
     Optional<Task> findByTaskIdAndIsDeletedFalse(Long taskId);
     boolean existsByTaskIdAndIsDeletedFalse(Long taskId);
+
+    List<Task> findByIsDeletedFalseAndIsCompleteFalse();
 }
