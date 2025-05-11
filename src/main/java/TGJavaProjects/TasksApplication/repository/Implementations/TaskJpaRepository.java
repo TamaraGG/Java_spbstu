@@ -20,4 +20,7 @@ public interface TaskJpaRepository extends TaskRepository, JpaRepository<Task, L
     Optional<Task> findByTaskIdAndIsDeletedFalse(Long taskId);
     @Override
     boolean existsByTaskIdAndIsDeletedFalse(Long taskId);
+
+    @Override
+    List<Task> findByIsDeletedFalseAndIsCompleteFalse();
 }
