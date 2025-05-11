@@ -1,6 +1,7 @@
 
 package TGJavaProjects.TasksApplication.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -38,5 +39,6 @@ public class User {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     @JsonManagedReference("user-tasks")
+    @JsonIgnore
     private List<Task> tasks = new ArrayList<>();
 }

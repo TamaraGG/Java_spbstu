@@ -7,6 +7,10 @@ import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import TGJavaProjects.TasksApplication.service.TaskService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -38,6 +42,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "taskCache", key = "#userId + '-' + #taskId", unless = "#result == null")
     public Task findTaskById(long userId, long taskId) throws ResourceNotFoundException {
         checkUserExists(userId);
         return taskRepository.findByTaskIdAndIsDeletedFalse(taskId)
@@ -48,6 +53,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "userTasksCache", key = "#userId")
     public List<Task> getAllTasksByUserId(long userId) throws ResourceNotFoundException {
         checkUserExists(userId);
         return taskRepository.findByUserIdAndIsDeletedFalse(userId);
@@ -55,6 +61,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "userTasksCache", key = "'pending-' + #userId")
     public List<Task> getPendingTasksByUserId(long userId) throws ResourceNotFoundException {
         checkUserExists(userId);
         return taskRepository.findByUserIdAndIsDeletedFalse(userId).stream()
@@ -64,6 +71,10 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+            @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+    })
     public Task createTaskForUser(long userId, Task task)
             throws ResourceNotFoundException {
         checkUserExists(userId);
@@ -89,6 +100,11 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "taskCache", key = "#userId + '-' + #taskId"),
+            @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+            @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+    })
     public void softDeleteTask(long userId, long taskId) throws ResourceNotFoundException {
         checkUserExists(userId);
         Task task = findTaskById(userId, taskId);
@@ -98,6 +114,13 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @Caching(
+            put = @CachePut(cacheNames = "taskCache", key = "#userId + '-' + #taskId"),
+            evict = {
+                    @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+                    @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+            }
+    )
     public Task markTaskAsCompleted(long userId, long taskId) throws ResourceNotFoundException {
         checkUserExists(userId);
         Task task = findTaskById(userId, taskId);
@@ -110,6 +133,13 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
+    @Caching(
+            put = @CachePut(cacheNames = "taskCache", key = "#userId + '-' + #taskId"),
+            evict = {
+                    @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
+                    @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
+            }
+    )
     public Task updateTaskDetails(long userId, long taskId, Task taskDetails) throws ResourceNotFoundException {
         checkUserExists(userId);
         Task existingTask = findTaskById(userId, taskId);

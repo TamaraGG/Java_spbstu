@@ -2,6 +2,7 @@
 package TGJavaProjects.TasksApplication.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -65,5 +66,6 @@ public class Task {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     @JsonManagedReference("task-notifications")
+    @JsonIgnore
     private List<Notification> notifications = new ArrayList<>();
 }
