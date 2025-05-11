@@ -9,7 +9,7 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
 
-    @Value("${kafka.topic.task.created:task-creations-topic}")
+    @Value("${kafka.topic.task.created}")
     private String taskCreatedTopicName;
 
     @Bean

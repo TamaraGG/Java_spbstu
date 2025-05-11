@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
@@ -25,27 +24,28 @@ public class KafkaConsumerConfig {
     private String groupId;
 
     @Bean
-    public ConsumerFactory<String, TaskCreatedEvent> consumerFactory() {
+    public ConsumerFactory<String, TaskCreatedEvent> taskCreatedEventConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
-        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "TGJavaProjects.TasksApplication.event.TaskCreatedEvent");
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
 
-        return new DefaultKafkaConsumerFactory<>(props,
+        JsonDeserializer<TaskCreatedEvent> deserializer = new JsonDeserializer<>(TaskCreatedEvent.class);
+        deserializer.setRemoveTypeHeaders(false);
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeMapperForKey(true);
+
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
                 new StringDeserializer(),
-                new JsonDeserializer<>(TaskCreatedEvent.class, false));
+                deserializer);
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, TaskCreatedEvent> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, TaskCreatedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+        factory.setConsumerFactory(taskCreatedEventConsumerFactory());
         return factory;
     }
 }
