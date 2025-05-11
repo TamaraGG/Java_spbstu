@@ -42,7 +42,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "taskCache", key = "#taskId", unless = "#result == null")
+    @Cacheable(cacheNames = "taskCache", key = "#userId + '-' + #taskId", unless = "#result == null")
     public Task findTaskById(long userId, long taskId) throws ResourceNotFoundException {
         checkUserExists(userId);
         return taskRepository.findByTaskIdAndIsDeletedFalse(taskId)
@@ -101,7 +101,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @Caching(evict = {
-            @CacheEvict(cacheNames = "taskCache", key = "#taskId"),
+            @CacheEvict(cacheNames = "taskCache", key = "#userId + '-' + #taskId"),
             @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
             @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
     })
@@ -115,7 +115,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @Caching(
-            put = @CachePut(cacheNames = "taskCache", key = "#taskId"),
+            put = @CachePut(cacheNames = "taskCache", key = "#userId + '-' + #taskId"),
             evict = {
                     @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
                     @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
@@ -134,7 +134,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
     @Override
     @Transactional
     @Caching(
-            put = @CachePut(cacheNames = "taskCache", key = "#taskId"),
+            put = @CachePut(cacheNames = "taskCache", key = "#userId + '-' + #taskId"),
             evict = {
                     @CacheEvict(cacheNames = "userTasksCache", key = "#userId"),
                     @CacheEvict(cacheNames = "userTasksCache", key = "'pending-' + #userId")
