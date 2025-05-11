@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import TGJavaProjects.TasksApplication.service.AnalyticsService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
-
+    private final AnalyticsService analyticsService;
 
     private void checkUserExists(long userId) throws ResourceNotFoundException {
         if (!userRepository.existsById(userId)) {
@@ -83,7 +84,7 @@ public class InMemoryTaskServiceImpl implements TaskService {
             throws ResourceNotFoundException {
         checkUserExists(userId);
 
-        if (task == null || task.getTaskText() == null || task.getTaskText().isBlank()) {
+        if (task == null || task.getTaskText().isBlank()) {
             throw new IllegalArgumentException("task text cannot be null or empty.");
         }
         task.setUserId(userId);
@@ -127,6 +128,8 @@ public class InMemoryTaskServiceImpl implements TaskService {
         log.info("Task with ID: {} for user ID: {} marked as deleted.", taskId, userId);
     }
 
+
+
     @Override
     @Transactional
     @Caching(
@@ -146,8 +149,14 @@ public class InMemoryTaskServiceImpl implements TaskService {
         task.setIsComplete(true);
         Task updatedTask = taskRepository.save(task);
         log.info("Task with ID: {} for user ID: {} marked as completed.", taskId, userId);
+
+        analyticsService.recordTaskCompletionEvent(updatedTask);
+        log.info("SYNC: Initiated asynchronous recording of task completion for taskId: {}", updatedTask.getTaskId());
+
         return updatedTask;
     }
+
+
 
     @Override
     @Transactional
