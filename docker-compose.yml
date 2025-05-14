@@ -1,6 +1,36 @@
 version: '3.8'
 
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    networks:
+      - tasks-net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: kafka
+    networks:
+      - tasks-net
+    depends_on:
+      - zookeeper
+    environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+        KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
   db:
     image: postgres:15-alpine
     container_name: tasks-postgres-db
@@ -47,13 +77,17 @@ services:
       SPRING_FLYWAY_ENABLED: true
       SPRING_DATA_REDIS_HOST: cache
       SPRING_DATA_REDIS_PORT: 6379
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_TASK_CREATED: ${KAFKA_TOPIC_TASK_CREATED:-task-creations-topic}
+
     networks:
       - tasks-net
     depends_on:
-      db:
-        condition: service_healthy
-      cache:
-        condition: service_started
+      - db
+      - cache
+      - kafka
+    restart: on-failure
 
 networks:
   tasks-net:

@@ -1,11 +1,13 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.event.TaskCreatedEvent;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
 import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.repository.NotificationRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
 import TGJavaProjects.TasksApplication.service.NotificationService;
 import lombok.AllArgsConstructor;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,7 +16,6 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
-//@Profile("in-memory")
 public class InMemoryNotificationImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
@@ -60,7 +61,10 @@ public class InMemoryNotificationImpl implements NotificationService {
                     "notification cannot be null.");
         }
 
-        checkUserExists(notification.getUserId());
+        if (!userRepository.existsById(notification.getUserId())) {
+            throw new ResourceNotFoundException(
+                    "user with id " + notification.getUserId() + " not found for notification.");
+        }
         return notificationRepository.save(notification);
     }
 

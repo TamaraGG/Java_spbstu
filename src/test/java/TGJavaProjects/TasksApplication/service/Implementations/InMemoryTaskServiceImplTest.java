@@ -1,17 +1,19 @@
 package TGJavaProjects.TasksApplication.service.Implementations;
 
+import TGJavaProjects.TasksApplication.event.TaskCreatedEvent;
 import TGJavaProjects.TasksApplication.exception.ResourceNotFoundException;
-import TGJavaProjects.TasksApplication.model.Notification;
 import TGJavaProjects.TasksApplication.model.Task;
 import TGJavaProjects.TasksApplication.repository.TaskRepository;
 import TGJavaProjects.TasksApplication.repository.UserRepository;
-import TGJavaProjects.TasksApplication.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,9 +33,15 @@ class InMemoryTaskServiceImplTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private NotificationService notificationService;
+    private ApplicationEventPublisher eventPublisher;
 
-    private Task task1, task2, task1Completed, task1Deleted;
+    @Captor
+    private ArgumentCaptor<TaskCreatedEvent> taskCreatedEventCaptor;
+
+    @Captor
+    private ArgumentCaptor<Task> taskArgumentCaptor;
+
+    private Task task1, task2;
     private Task taskToCreate;
 
     private static final long USER_ID_1 = 1L;
@@ -48,6 +56,7 @@ class InMemoryTaskServiceImplTest {
 
     @BeforeEach
     void setUp() {
+
         taskToCreate = Task.builder()
                 .userId(USER_ID_1)
                 .taskText(TASK_TEXT_NEW)
@@ -73,29 +82,7 @@ class InMemoryTaskServiceImplTest {
                 .isComplete(true)
                 .isDeleted(false)
                 .build();
-
-        task1Completed = Task.builder()
-                .taskId(TASK_ID_1)
-                .userId(task1.getUserId())
-                .taskText(task1.getTaskText())
-                .creationDate(task1.getCreationDate())
-                .dueDate(task1.getDueDate())
-                .isComplete(true)
-                .isDeleted(task1.getIsDeleted())
-                .build();
-
-        task1Deleted = Task.builder()
-                .taskId(TASK_ID_1)
-                .userId(task1.getUserId())
-                .taskText(task1.getTaskText())
-                .creationDate(task1.getCreationDate())
-                .dueDate(task1.getDueDate())
-                .isComplete(task1.getIsComplete())
-                .isDeleted(true)
-                .build();
     }
-
-    // findAllTasks
 
     @Test
     void findAllTasks_ReturnsListOfNonDeletedTasks() {
@@ -225,7 +212,7 @@ class InMemoryTaskServiceImplTest {
     // createTaskForUser
 
     @Test
-    void createTaskForUser_CreatesTaskAndNotification_WhenValid() {
+    void createTaskForUser_SavesTaskAndPublishesSpringEvent_WhenValid() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
         Task savedTaskWithId = Task.builder()
                 .taskId(TASK_ID_1)
@@ -236,11 +223,8 @@ class InMemoryTaskServiceImplTest {
                 .isComplete(false)
                 .isDeleted(false)
                 .build();
+
         when(taskRepository.save(any(Task.class))).thenReturn(savedTaskWithId);
-
-        when(notificationService.addNotification(any(Notification.class)))
-                .thenReturn(mock(Notification.class));
-
 
         Task result = taskService.createTaskForUser(USER_ID_1, taskToCreate);
 
@@ -252,20 +236,19 @@ class InMemoryTaskServiceImplTest {
         assertNotNull(result.getCreationDate());
 
         verify(userRepository, times(1)).existsById(USER_ID_1);
-        verify(taskRepository, times(1)).save(argThat(task ->
-                task.getUserId().equals(USER_ID_1) &&
-                        task.getTaskText().equals(taskToCreate.getTaskText()) &&
-                        !task.getIsComplete() &&
-                        !task.getIsDeleted()
-        ));
+        verify(taskRepository, times(1)).save(taskArgumentCaptor.capture());
+        Task capturedTaskToSave = taskArgumentCaptor.getValue();
+        assertEquals(USER_ID_1, capturedTaskToSave.getUserId());
+        assertEquals(taskToCreate.getTaskText(), capturedTaskToSave.getTaskText());
+        assertFalse(capturedTaskToSave.getIsComplete());
+        assertFalse(capturedTaskToSave.getIsDeleted());
 
-        verify(notificationService, times(1))
-                .addNotification(argThat(notification ->
-                        notification.getUserId().equals(USER_ID_1) &&
-                                notification.getTaskId().equals(savedTaskWithId.getTaskId()) &&
-                                notification.getText().contains(savedTaskWithId.getTaskText()) &&
-                                !notification.getIsRead()
-                ));
+        verify(eventPublisher, times(1)).publishEvent(taskCreatedEventCaptor.capture());
+        TaskCreatedEvent capturedEvent = taskCreatedEventCaptor.getValue();
+        assertNotNull(capturedEvent);
+        assertEquals(savedTaskWithId.getTaskId(), capturedEvent.getTaskId());
+        assertEquals(savedTaskWithId.getUserId(), capturedEvent.getUserId());
+        assertEquals(savedTaskWithId.getTaskText(), capturedEvent.getTaskText());
     }
 
     @Test
@@ -274,7 +257,7 @@ class InMemoryTaskServiceImplTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> taskService.createTaskForUser(NON_EXISTENT_USER_ID, taskToCreate));
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        verify(eventPublisher, never()).publishEvent(any(TaskCreatedEvent.class));
     }
 
     @Test
@@ -284,9 +267,10 @@ class InMemoryTaskServiceImplTest {
                 IllegalArgumentException.class,
                 () -> taskService.createTaskForUser(USER_ID_1, null)
         );
-        assertEquals("task text cannot be empty.", exception.getMessage());
+
+        assertEquals("task text cannot be null or empty.", exception.getMessage());
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        verify(eventPublisher, never()).publishEvent(any(TaskCreatedEvent.class));
     }
 
     @Test
@@ -297,9 +281,9 @@ class InMemoryTaskServiceImplTest {
                 IllegalArgumentException.class,
                 () -> taskService.createTaskForUser(USER_ID_1, taskWithBlankText)
         );
-        assertEquals("task text cannot be empty.", exception.getMessage());
+        assertEquals("task text cannot be null or empty.", exception.getMessage());
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        verify(eventPublisher, never()).publishEvent(any(TaskCreatedEvent.class));
     }
 
     @Test
@@ -310,9 +294,9 @@ class InMemoryTaskServiceImplTest {
                 IllegalArgumentException.class,
                 () -> taskService.createTaskForUser(USER_ID_1, taskWithEmptyText)
         );
-        assertEquals("task text cannot be empty.", exception.getMessage());
+        assertEquals("task text cannot be null or empty.", exception.getMessage());
         verify(taskRepository, never()).save(any());
-        verify(notificationService, never()).addNotification(any());
+        verify(eventPublisher, never()).publishEvent(any(TaskCreatedEvent.class));
     }
 
     // softDeleteTask
@@ -320,17 +304,21 @@ class InMemoryTaskServiceImplTest {
     @Test
     void softDeleteTask_MarksTaskAsDeleted() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
-        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1)).thenReturn(Optional.of(task1));
-        when(taskRepository.save(any(Task.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        Task taskToModify = Task.builder().taskId(task1.getTaskId()).userId(task1.getUserId())
+                .taskText(task1.getTaskText()).isComplete(task1.getIsComplete())
+                .isDeleted(task1.getIsDeleted()).build();
+        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1)).thenReturn(Optional.of(taskToModify));
+
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
 
         taskService.softDeleteTask(USER_ID_1, TASK_ID_1);
 
         verify(taskRepository, times(1)).findByTaskIdAndIsDeletedFalse(TASK_ID_1);
-        verify(taskRepository, times(1)).save(argThat(task ->
-                task.getTaskId().equals(TASK_ID_1) &&
-                        task.getIsDeleted()
-        ));
+        verify(taskRepository, times(1)).save(taskArgumentCaptor.capture());
+        Task savedTask = taskArgumentCaptor.getValue();
+        assertEquals(TASK_ID_1, savedTask.getTaskId());
+        assertTrue(savedTask.getIsDeleted());
     }
 
     @Test
@@ -352,8 +340,11 @@ class InMemoryTaskServiceImplTest {
     @Test
     void markTaskAsCompleted_MarksTaskAsComplete() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
+        Task taskToModify = Task.builder().taskId(task1.getTaskId()).userId(task1.getUserId())
+                .taskText(task1.getTaskText()).isComplete(false)
+                .isDeleted(task1.getIsDeleted()).build();
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1))
-                .thenReturn(Optional.of(task1));
+                .thenReturn(Optional.of(taskToModify));
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -362,15 +353,16 @@ class InMemoryTaskServiceImplTest {
         assertNotNull(result);
         assertTrue(result.getIsComplete());
         verify(taskRepository, times(1)).findByTaskIdAndIsDeletedFalse(TASK_ID_1);
-        verify(taskRepository, times(1)).save(argThat(task ->
-                task.getTaskId().equals(TASK_ID_1) &&
-                        task.getIsComplete()
-        ));
+        verify(taskRepository, times(1)).save(taskArgumentCaptor.capture());
+        Task savedTask = taskArgumentCaptor.getValue();
+        assertEquals(TASK_ID_1, savedTask.getTaskId());
+        assertTrue(savedTask.getIsComplete());
     }
 
     @Test
     void markTaskAsCompleted_ThrowsIllegalState_WhenTaskAlreadyCompleted() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
+
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_2)).thenReturn(Optional.of(task2));
 
         assertThrows(IllegalStateException.class,
@@ -385,8 +377,14 @@ class InMemoryTaskServiceImplTest {
     @Test
     void updateTaskDetails_UpdatesTextAndDueDate() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
+
+        Task originalTaskCopy = Task.builder()
+                .taskId(task1.getTaskId()).userId(task1.getUserId()).taskText(task1.getTaskText())
+                .creationDate(task1.getCreationDate()).dueDate(task1.getDueDate())
+                .isComplete(task1.getIsComplete()).isDeleted(task1.getIsDeleted()).build();
+
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1))
-                .thenReturn(Optional.of(task1));
+                .thenReturn(Optional.of(originalTaskCopy));
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -401,57 +399,86 @@ class InMemoryTaskServiceImplTest {
         assertNotNull(result);
         assertEquals("Updated Details Text", result.getTaskText());
         assertEquals(detailsToUpdate.getDueDate(), result.getDueDate());
-        assertEquals(task1.getUserId(), result.getUserId());
-        assertEquals(task1.getIsComplete(), result.getIsComplete());
-        assertEquals(task1.getIsDeleted(), result.getIsDeleted());
+
+        assertEquals(originalTaskCopy.getUserId(), result.getUserId());
+        assertEquals(originalTaskCopy.getIsComplete(), result.getIsComplete());
+        assertEquals(originalTaskCopy.getIsDeleted(), result.getIsDeleted());
 
         verify(taskRepository, times(1))
                 .findByTaskIdAndIsDeletedFalse(TASK_ID_1);
-        verify(taskRepository, times(1)).save(argThat(task ->
-                task.getTaskId().equals(TASK_ID_1) &&
-                        task.getTaskText().equals("Updated Details Text") &&
-                        task.getDueDate().equals(detailsToUpdate.getDueDate())
-        ));
+        verify(taskRepository, times(1)).save(taskArgumentCaptor.capture());
+        Task savedTask = taskArgumentCaptor.getValue();
+        assertEquals(TASK_ID_1, savedTask.getTaskId());
+        assertEquals("Updated Details Text", savedTask.getTaskText());
+        assertEquals(detailsToUpdate.getDueDate(), savedTask.getDueDate());
     }
 
     @Test
-    void updateTaskDetails_OnlyUpdatesProvidedFields() {
+    void updateTaskDetails_OnlyUpdatesProvidedFields_TextThenDate() {
         when(userRepository.existsById(USER_ID_1)).thenReturn(true);
 
-        Task originalTask = Task.builder()
-                .taskId(task1.getTaskId())
-                .userId(task1.getUserId())
-                .taskText(task1.getTaskText())
-                .creationDate(task1.getCreationDate())
-                .dueDate(task1.getDueDate())
-                .isComplete(task1.getIsComplete()).isDeleted(task1.getIsDeleted()).build();
+        Task initialTaskState = Task.builder()
+                .taskId(TASK_ID_1).userId(USER_ID_1).taskText(TASK_TEXT_1)
+                .creationDate(NOW.minusDays(1)).dueDate(NOW.plusDays(5))
+                .isComplete(false).isDeleted(false).build();
 
         when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1))
-                .thenReturn(Optional.of(originalTask));
+                .thenReturn(Optional.of(Task.builder()
+                        .taskId(initialTaskState.getTaskId()).userId(initialTaskState.getUserId())
+                        .taskText(initialTaskState.getTaskText()).creationDate(initialTaskState.getCreationDate())
+                        .dueDate(initialTaskState.getDueDate()).isComplete(initialTaskState.getIsComplete())
+                        .isDeleted(initialTaskState.getIsDeleted()).build()));
         when(taskRepository.save(any(Task.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Task detailsWithOnlyText = Task.builder()
                 .taskText("Only Text Updated")
-                .userId(USER_ID_1).build();
+                .userId(USER_ID_1)
+                .build();
 
-        Task result1 = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsWithOnlyText);
-        assertEquals("Only Text Updated", result1.getTaskText());
-        assertEquals(originalTask.getDueDate(), result1.getDueDate());
+        Task resultAfterTextUpdate = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsWithOnlyText);
+        assertEquals("Only Text Updated", resultAfterTextUpdate.getTaskText());
+        assertEquals(initialTaskState.getDueDate(), resultAfterTextUpdate.getDueDate());
 
-        Task taskAfterTextUpdate = Task.builder()
-                .taskId(task1.getTaskId()).userId(task1.getUserId()).taskText("Only Text Updated")
-                .creationDate(task1.getCreationDate()).dueDate(task1.getDueDate())
-                .isComplete(task1.getIsComplete()).isDeleted(task1.getIsDeleted()).build();
-        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1)).thenReturn(Optional.of(taskAfterTextUpdate));
+        Task stateAfterTextUpdate = Task.builder()
+                .taskId(initialTaskState.getTaskId()).userId(initialTaskState.getUserId())
+                .taskText("Only Text Updated")
+                .creationDate(initialTaskState.getCreationDate()).dueDate(initialTaskState.getDueDate())
+                .isComplete(initialTaskState.getIsComplete()).isDeleted(initialTaskState.getIsDeleted()).build();
+        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1))
+                .thenReturn(Optional.of(stateAfterTextUpdate));
 
+        LocalDateTime newDueDate = NOW.plusMonths(1);
         Task detailsWithOnlyDueDate = Task.builder()
-                .dueDate(NOW.plusMonths(1))
-                .taskText(taskAfterTextUpdate.getTaskText())
-                .userId(USER_ID_1).build();
+                .dueDate(newDueDate)
+                .taskText("")
+                .userId(USER_ID_1)
+                .build();
 
-        Task result2 = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsWithOnlyDueDate);
-        assertEquals("Only Text Updated", result2.getTaskText());
-        assertEquals(detailsWithOnlyDueDate.getDueDate(), result2.getDueDate());
+        Task resultAfterDateUpdate = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, detailsWithOnlyDueDate);
+        assertEquals("Only Text Updated", resultAfterDateUpdate.getTaskText());
+        assertEquals(newDueDate, resultAfterDateUpdate.getDueDate());
+    }
+
+    @Test
+    void updateTaskDetails_DoesNotUpdate_WhenNoFieldsToUpdate() {
+        when(userRepository.existsById(USER_ID_1)).thenReturn(true);
+        Task originalTask = Task.builder()
+                .taskId(TASK_ID_1).userId(USER_ID_1).taskText(TASK_TEXT_1)
+                .dueDate(NOW.plusDays(5)).isComplete(false).isDeleted(false).build();
+
+        when(taskRepository.findByTaskIdAndIsDeletedFalse(TASK_ID_1)).thenReturn(Optional.of(originalTask));
+
+        Task emptyDetails = Task.builder()
+                .taskText("")
+                .userId(USER_ID_1)
+                .build();
+
+        Task result = taskService.updateTaskDetails(USER_ID_1, TASK_ID_1, emptyDetails);
+
+        assertEquals(originalTask.getTaskText(), result.getTaskText());
+        assertEquals(originalTask.getDueDate(), result.getDueDate());
+        verify(taskRepository, times(1)).findByTaskIdAndIsDeletedFalse(TASK_ID_1);
+        verify(taskRepository, never()).save(any(Task.class));
     }
 }
